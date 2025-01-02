@@ -18,7 +18,6 @@
 ## [1.1.0] - 2025-01-01
 
 ### Added
-- Proof of Balance feature (`ProveBalance` and `VerifyBalance`).
 - Salt generation improvements for stronger proofs.
 
 ### Changed
