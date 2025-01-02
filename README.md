@@ -14,7 +14,7 @@ You can install **ZkpSharp** via NuGet. Run the following command in your projec
 
 ```bash
 dotnet add package ZkpSharp
-
+```
 ## Usage
 
 ### Proof of Age
@@ -42,6 +42,7 @@ class Program
         Console.WriteLine($"Age proof valid: {isValid}");
     }
 }
+```
 
 ### Proof of Balance
 
@@ -68,3 +69,4 @@ class Program
         Console.WriteLine($"Balance proof valid: {isValidBalance}");
     }
 }
+```
