@@ -70,3 +70,26 @@ class Program
     }
 }
 ```
+## Contributing
+
+We welcome contributions! To contribute:
+	1.	Fork the repository.
+	2.	Create a new branch for your changes (git checkout -b feature/your-feature).
+	3.	Commit your changes (git commit -m 'Add new feature').
+	4.	Push to your branch (git push origin feature/your-feature).
+	5.	Create a pull request.
+
+Please ensure that your code passes all tests and adheres to the code style of the project.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Roadmap
+	•	Add more proof types (e.g., Proof of Identity, Proof of Transaction History).
+	•	Improve performance and scalability for large datasets.
+	•	Enhance security features (e.g., multi-factor authentication for proofs).
+
+## Contact
+
+For questions, issues, or suggestions, feel free to open an issue or contact Azimbek Sagynbaev at [sagynbaev6@gmail.com].
