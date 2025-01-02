@@ -14,9 +14,9 @@ namespace ZkpSharp.Security
     {
         private readonly byte[] _hmacKey;
 
-        public ProofProvider()
+        public ProofProvider(string hmacSecretKeyBase64)
         {
-            _hmacKey = LoadHmacKey();
+            _hmacKey = Convert.FromBase64String(hmacSecretKeyBase64);
         }
 
         public string GenerateSalt()
@@ -49,12 +49,6 @@ namespace ZkpSharp.Security
             }
 
             return diff == 0;
-        }
-
-        private byte[] LoadHmacKey()
-        {
-            // Load HMAC key from secure storage
-            return new byte[32]; // Here we just return a dummy key
         }
     }
 }

@@ -10,7 +10,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestProveAndVerifyAge_ValidAge_ShouldPass()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             var dateOfBirth = new DateTime(2000, 1, 1);  // Age 25
             var (proof, salt) = zkp.ProveAge(dateOfBirth);
@@ -21,7 +21,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestProveAndVerifyAge_InsufficientAge_ShouldFail()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             var dateOfBirth = new DateTime(2010, 1, 1);  // Age 15
 
@@ -32,7 +32,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestProveAndVerifyBalance_ValidBalance_ShouldPass()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
@@ -46,7 +46,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestProveAndVerifyBalance_InsufficientBalance_ShouldFail()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             double userBalance = 300.0;
             double requestedAmount = 500.0;
@@ -59,7 +59,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestBalanceVerificationWithSalt_ValidBalance_ShouldPass()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
@@ -71,7 +71,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestBalanceVerificationWithSalt_InsufficientBalance_ShouldFail()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             double userBalance = 100.0;
             double requestedAmount = 150.0;
@@ -83,7 +83,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestProveAndVerifyAge_InvalidSalt_ShouldFail()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             var dateOfBirth = new DateTime(2000, 1, 1);  // Возраст 25 лет
             var (proof, salt) = zkp.ProveAge(dateOfBirth);
@@ -96,7 +96,7 @@ namespace ZkpSharp.Tests
         [Fact]
         public void TestBalanceVerificationWithSalt_InvalidSalt_ShouldFail()
         {
-            var proofProvider = new ProofProvider();
+            var proofProvider = new ProofProvider("hmacSecretKeyBase64");
             var zkp = new ZKP(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
@@ -105,5 +105,8 @@ namespace ZkpSharp.Tests
             string incorrectSalt = Guid.NewGuid().ToString();
             Assert.False(zkp.VerifyBalance(proof, requestedAmount, incorrectSalt, userBalance), "Proof should fail due to incorrect salt");
         }
+
+        // TODO: Add more tests for:
+        // ProveRange, VerifyRange, ProveTimestamp, VerifyTimestamp, ProveSetMembership, VerifySetMembership.
     }
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.1.1] - 2025-01-01
 
 ### Added
 - New method for range proofs (`ProveRange` and `VerifyRange`).
@@ -8,7 +8,7 @@
 - Support for proving set membership (`ProveSetMembership` and `VerifySetMembership`).
 
 ### Changed
-- Updated HMAC implementation to use more secure random salts.
+- Refined HMAC implementation to retrieve the secret key from environment variables for enhanced security and flexibility.
 
 ### Fixed
 - Bug in age verification logic that caused incorrect validation for dates close to the required age.

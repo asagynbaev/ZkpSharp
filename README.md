@@ -6,7 +6,11 @@
 
 - **Proof of Age**: Prove that your age is above a certain threshold without revealing your actual birthdate.
 - **Proof of Balance**: Prove that you have sufficient balance to make a transaction without revealing your full balance.
+- **Proof of Membership**: Prove that a given value belongs to a set of valid values (e.g., proving you belong to a specific group).
+- **Proof of Range**: Prove that a value lies within a specified range without revealing the exact value.
+- **Proof of Time Condition**: Prove that an event occurred before or after a specified date without revealing the event date.
 - **Secure Hashing**: Uses SHA-256 hashing combined with a random salt to ensure secure and non-reversible proofs.
+
 
 ## Installation
 
@@ -15,6 +19,45 @@ You can install **ZkpSharp** via NuGet. Run the following command in your projec
 ```bash
 dotnet add package ZkpSharp
 ```
+
+## Setup
+
+Before using the ZkpSharp library, you need to configure a secret key for HMAC (SHA-256) hashing. This key is required for generating and verifying proofs.
+
+### Setting Up the HMAC Key in Code
+
+Instead of using environment variables, you can pass the HMAC secret key directly when creating the ProofProvider. The key should be a 256-bit key (32 bytes) encoded in Base64.
+
+Here’s an example of how to configure the HMAC key directly in your application:
+
+```csharp
+using ZkpSharp;
+using ZkpSharp.Security;
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        // Example base64-encoded HMAC secret key (256 bits / 32 bytes)
+        string hmacSecretKeyBase64 = "your-base64-encoded-key-here";
+
+        // Create an instance of ProofProvider with the provided HMAC key
+        var proofProvider = new ProofProvider(hmacSecretKeyBase64);
+
+        var zkp = new ZKP(proofProvider);
+        var dateOfBirth = new DateTime(2000, 1, 1); // The user's date of birth
+
+        // Generate proof of age
+        var (proof, salt) = zkp.ProveAge(dateOfBirth);
+
+        // Verify the proof of age
+        bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
+        Console.WriteLine($"Age proof valid: {isValid}");
+    }
+}
+```
+
 ## Usage
 
 ### Proof of Age
@@ -70,25 +113,22 @@ class Program
     }
 }
 ```
+
 ## Contributing
 
 We welcome contributions! To contribute:
-	1.	Fork the repository.
-	2.	Create a new branch for your changes (git checkout -b feature/your-feature).
-	3.	Commit your changes (git commit -m 'Add new feature').
-	4.	Push to your branch (git push origin feature/your-feature).
-	5.	Create a pull request.
+
+1. Fork the repository.  
+2. Create a new branch for your changes (`git checkout -b feature/your-feature`).  
+3. Commit your changes (`git commit -m 'Add new feature'`).  
+4. Push to your branch (`git push origin feature/your-feature`).  
+5. Create a pull request.
 
 Please ensure that your code passes all tests and adheres to the code style of the project.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Roadmap
-	•	Add more proof types (e.g., Proof of Identity, Proof of Transaction History).
-	•	Improve performance and scalability for large datasets.
-	•	Enhance security features (e.g., multi-factor authentication for proofs).
 
 ## Contact
 
