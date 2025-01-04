@@ -1,15 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
+using ZkpSharp.Interfaces;
 
 namespace ZkpSharp.Security
 {
-    public interface IProofProvider
-    {
-        string GenerateSalt();
-        string GenerateHMAC(string input);
-        bool SecureEqual(string a, string b);
-    }
-
     public class ProofProvider : IProofProvider
     {
         private readonly byte[] _hmacKey;

@@ -1,13 +1,13 @@
-﻿using ZkpSharp.Security;
+﻿using ZkpSharp.Interfaces;
 
 namespace ZkpSharp.Core
 {
-    public class ZKP
+    public class Zkp
     {
         private const int RequiredAge = 18; 
         private readonly IProofProvider _proofProvider;
 
-        public ZKP(IProofProvider proofProvider)
+        public Zkp(IProofProvider proofProvider)
         {
             _proofProvider = proofProvider;
         }
@@ -15,7 +15,7 @@ namespace ZkpSharp.Core
         // Proof of Age
         public (string Proof, string Salt) ProveAge(DateTime dateOfBirth)
         {
-            if (CalculateAge(dateOfBirth) < RequiredAge)
+            if (Utilities.CalculateAge(dateOfBirth) < RequiredAge)
             {
                 throw new ArgumentException("Insufficient age");
             }
@@ -27,17 +27,9 @@ namespace ZkpSharp.Core
 
         public bool VerifyAge(string proof, DateTime dateOfBirth, string salt)
         {
-            int age = CalculateAge(dateOfBirth);
+            int age = Utilities.CalculateAge(dateOfBirth);
             string calculatedProof = _proofProvider.GenerateHMAC(dateOfBirth.ToString("yyyy-MM-dd") + salt);
             return age >= RequiredAge && _proofProvider.SecureEqual(calculatedProof, proof);
-        }
-
-        private int CalculateAge(DateTime dateOfBirth)
-        {
-            DateTime today = DateTime.UtcNow;
-            int age = today.Year - dateOfBirth.Year;
-            if (dateOfBirth > today.AddYears(-age)) age--; 
-            return age;
         }
 
         // Proof of Balance

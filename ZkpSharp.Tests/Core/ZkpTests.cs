@@ -1,22 +1,22 @@
-using System;
-using Xunit;
 using ZkpSharp.Core;
 using ZkpSharp.Security;
 
-namespace ZkpSharp.Tests
+namespace ZkpSharp.Tests.Core
 {
-    public class ZKPTests
+    public class ZkpTests
     {
         private string _hmacKey = "V0V3Mv4D1USxZYwWL4eG93m0JKdO9KbXQn0mhg+EXHc=";
 
         [Fact]
         public void TestProveAndVerifyAge_ValidAge_ShouldPass()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             var dateOfBirth = new DateTime(2000, 1, 1);  // Age 25
             var (proof, salt) = zkp.ProveAge(dateOfBirth);
 
+            // Assert
             Assert.True(zkp.VerifyAge(proof, dateOfBirth, salt), "Proof should be valid");
         }
 
@@ -24,91 +24,131 @@ namespace ZkpSharp.Tests
         public void TestProveAndVerifyAge_InsufficientAge_ShouldFail()
         {
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             var dateOfBirth = new DateTime(2010, 1, 1);  // Age 15
 
+            // Act
             var exception = Assert.Throws<ArgumentException>(() => zkp.ProveAge(dateOfBirth));
+            
+            // Assert
             Assert.Equal("Insufficient age", exception.Message);
         }
 
         [Fact]
         public void TestProveAndVerifyBalance_ValidBalance_ShouldPass()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
 
-            // Generate proof and salt for balance
+            // Act
             var (proof, salt) = zkp.ProveBalance(userBalance, requestedAmount);
 
-            Assert.True(zkp.VerifyBalance(proof, requestedAmount, salt, userBalance), "Proof should be valid");
+            // Assert
+            Assert.True(
+                zkp.VerifyBalance(proof, requestedAmount, salt, userBalance), 
+                "Proof should be valid"
+            );
         }
 
         [Fact]
         public void TestProveAndVerifyBalance_InsufficientBalance_ShouldFail()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             double userBalance = 300.0;
             double requestedAmount = 500.0;
 
-            // Test for insufficient balance
-            var exception = Assert.Throws<ArgumentException>(() => zkp.ProveBalance(userBalance, requestedAmount));
+            // Act
+            var exception = Assert.Throws<ArgumentException>(
+                () => zkp.ProveBalance(userBalance, requestedAmount)
+            );
+
+            // Assert
             Assert.Equal("Insufficient balance", exception.Message);
         }
 
         [Fact]
         public void TestBalanceVerificationWithSalt_ValidBalance_ShouldPass()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
+
+            // Act
             var (proof, salt) = zkp.ProveBalance(userBalance, requestedAmount);
 
-            Assert.True(zkp.VerifyBalance(proof, requestedAmount, salt, userBalance), "Proof should be valid");
+            // Assert
+            Assert.True(
+                zkp.VerifyBalance(proof, requestedAmount, salt, userBalance), 
+                "Proof should be valid"
+            );
         }
 
         [Fact]
         public void TestBalanceVerificationWithSalt_InsufficientBalance_ShouldFail()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             double userBalance = 100.0;
             double requestedAmount = 150.0;
 
-            var exception = Assert.Throws<ArgumentException>(() => zkp.ProveBalance(userBalance, requestedAmount));
+            // Act
+            var exception = Assert.Throws<ArgumentException>(
+                () => zkp.ProveBalance(userBalance, requestedAmount)
+            );
+
+            // Assert
             Assert.Equal("Insufficient balance", exception.Message);
         }
 
         [Fact]
         public void TestProveAndVerifyAge_InvalidSalt_ShouldFail()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             var dateOfBirth = new DateTime(2000, 1, 1);  // Возраст 25 лет
             var (proof, salt) = zkp.ProveAge(dateOfBirth);
 
-            // Test for invalid salt
-            string incorrectSalt = Guid.NewGuid().ToString(); 
-            Assert.False(zkp.VerifyAge(proof, dateOfBirth, incorrectSalt), "Proof should fail due to incorrect salt");
+            // Act
+            string incorrectSalt = Guid.NewGuid().ToString();
+
+            // Assert
+            Assert.False(
+                zkp.VerifyAge(proof, dateOfBirth, incorrectSalt), 
+                "Proof should fail due to incorrect salt"
+            );
         }
 
         [Fact]
         public void TestBalanceVerificationWithSalt_InvalidSalt_ShouldFail()
         {
+            // Arrange
             var proofProvider = new ProofProvider(_hmacKey);
-            var zkp = new ZKP(proofProvider);
+            var zkp = new Zkp(proofProvider);
             double userBalance = 1000.0;
             double requestedAmount = 500.0;
             var (proof, salt) = zkp.ProveBalance(userBalance, requestedAmount);
 
+            // Act
             string incorrectSalt = Guid.NewGuid().ToString();
-            Assert.False(zkp.VerifyBalance(proof, requestedAmount, incorrectSalt, userBalance), "Proof should fail due to incorrect salt");
+
+            // Assert
+            Assert.False(
+                zkp.VerifyBalance(proof, requestedAmount, incorrectSalt, userBalance), 
+                "Proof should fail due to incorrect salt"
+            );
         }
 
         // TODO: Add more tests for:
-        // ProveRange, VerifyRange, ProveTimestamp, VerifyTimestamp, ProveSetMembership, VerifySetMembership.
+        // ProveRange, VerifyRange, ProveTimestamp, VerifyTimestamp, 
+        // ProveSetMembership, VerifySetMembership.
     }
 }
