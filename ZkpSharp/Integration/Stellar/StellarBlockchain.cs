@@ -1,8 +1,6 @@
 using StellarDotnetSdk;
 using StellarDotnetSdk.Accounts;
 using StellarDotnetSdk.Responses;
-using StellarDotnetSdk.Transactions;
-using StellarDotnetSdk.Xdr;
 using ZkpSharp.Interfaces;
 
 namespace ZkpSharp.Stellar

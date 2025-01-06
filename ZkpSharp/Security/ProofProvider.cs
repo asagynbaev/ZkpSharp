@@ -15,6 +15,7 @@ namespace ZkpSharp.Security
 
         public string GenerateSalt()
         {
+            //TODO: make 32 bytes
             byte[] saltBytes = new byte[16];
             using (var rng = RandomNumberGenerator.Create())
             {
