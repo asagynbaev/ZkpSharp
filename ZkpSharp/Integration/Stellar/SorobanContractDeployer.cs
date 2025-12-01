@@ -31,11 +31,20 @@ namespace ZkpSharp.Integration.Stellar
 
         public async Task DeployContractAsync(DeploymentParameters parameters)
         {
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
+
             if (string.IsNullOrEmpty(parameters.WasmPath) && string.IsNullOrEmpty(parameters.WasmHash))
-                throw new ArgumentException("Either WasmPath or WasmHash must be provided.");
+            {
+                throw new ArgumentException("Either WasmPath or WasmHash must be provided.", nameof(parameters));
+            }
 
             if (string.IsNullOrEmpty(parameters.ZkpProof) || string.IsNullOrEmpty(parameters.VerifyingKey))
-                throw new ArgumentException("ZKP proof and verifying key are required.");
+            {
+                throw new ArgumentException("ZKP proof and verifying key are required.", nameof(parameters));
+            }
 
             var wasmHash = !string.IsNullOrEmpty(parameters.WasmHash)
                 ? parameters.WasmHash
@@ -86,12 +95,13 @@ namespace ZkpSharp.Integration.Stellar
             return BitConverter.ToString(hash).Replace("-", "").ToLower();
         }
 
-        //TODO: Delete duplicate, there is also a GenerateSalt() in ProofProvider.cs
         private static byte[] GenerateSalt()
         {
-            var random = new Random();
             var salt = new byte[32];
-            random.NextBytes(salt);
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(salt);
+            }
             return salt;
         }
 

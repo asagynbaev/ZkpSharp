@@ -10,13 +10,28 @@ namespace ZkpSharp.Security
 
         public ProofProvider(string hmacSecretKeyBase64)
         {
-            _hmacKey = Convert.FromBase64String(hmacSecretKeyBase64);
+            if (string.IsNullOrEmpty(hmacSecretKeyBase64))
+            {
+                throw new ArgumentException("HMAC secret key cannot be null or empty.", nameof(hmacSecretKeyBase64));
+            }
+
+            try
+            {
+                _hmacKey = Convert.FromBase64String(hmacSecretKeyBase64);
+                if (_hmacKey.Length != 32)
+                {
+                    throw new ArgumentException("HMAC secret key must be 32 bytes (256 bits) when decoded.", nameof(hmacSecretKeyBase64));
+                }
+            }
+            catch (FormatException ex)
+            {
+                throw new ArgumentException("Invalid Base64 format for HMAC secret key.", nameof(hmacSecretKeyBase64), ex);
+            }
         }
 
         public string GenerateSalt()
         {
-            //TODO: make 32 bytes
-            byte[] saltBytes = new byte[16];
+            byte[] saltBytes = new byte[32];
             using (var rng = RandomNumberGenerator.Create())
             {
                 rng.GetBytes(saltBytes);
@@ -35,6 +50,11 @@ namespace ZkpSharp.Security
 
         public bool SecureEqual(string a, string b)
         {
+            if (a == null || b == null)
+            {
+                return a == b; // Both null -> true, one null -> false
+            }
+
             if (a.Length != b.Length) return false;
 
             int diff = 0;

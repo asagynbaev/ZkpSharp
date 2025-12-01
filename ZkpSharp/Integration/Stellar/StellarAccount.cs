@@ -11,6 +11,16 @@ namespace ZkpSharp.Integration.Stellar
 
         public StellarAccount(string publicKey, string secretKey)
         {
+            if (string.IsNullOrEmpty(publicKey))
+            {
+                throw new ArgumentException("Public key cannot be null or empty.", nameof(publicKey));
+            }
+
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new ArgumentException("Secret key cannot be null or empty.", nameof(secretKey));
+            }
+
             PublicKey = publicKey;
             SecretKey = secretKey;
 
