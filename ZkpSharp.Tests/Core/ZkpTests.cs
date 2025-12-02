@@ -1,4 +1,5 @@
 using ZkpSharp.Core;
+using ZkpSharp.Exceptions;
 using ZkpSharp.Security;
 
 namespace ZkpSharp.Tests.Core
@@ -28,10 +29,12 @@ namespace ZkpSharp.Tests.Core
             var dateOfBirth = new DateTime(2010, 1, 1);  // Age 15
 
             // Act
-            var exception = Assert.Throws<ArgumentException>(() => zkp.ProveAge(dateOfBirth));
+            var exception = Assert.Throws<InsufficientAgeException>(() => zkp.ProveAge(dateOfBirth));
             
             // Assert
-            Assert.Equal("Insufficient age", exception.Message);
+            Assert.Contains("Insufficient age", exception.Message);
+            Assert.Equal(18, exception.RequiredAge);
+            Assert.Equal(15, exception.ActualAge);
         }
 
         [Fact]
@@ -63,12 +66,14 @@ namespace ZkpSharp.Tests.Core
             double requestedAmount = 500.0;
 
             // Act
-            var exception = Assert.Throws<ArgumentException>(
+            var exception = Assert.Throws<InsufficientBalanceException>(
                 () => zkp.ProveBalance(userBalance, requestedAmount)
             );
 
             // Assert
-            Assert.Equal("Insufficient balance", exception.Message);
+            Assert.Contains("Insufficient balance", exception.Message);
+            Assert.Equal(300.0, exception.Balance);
+            Assert.Equal(500.0, exception.RequestedAmount);
         }
 
         [Fact]
@@ -100,12 +105,14 @@ namespace ZkpSharp.Tests.Core
             double requestedAmount = 150.0;
 
             // Act
-            var exception = Assert.Throws<ArgumentException>(
+            var exception = Assert.Throws<InsufficientBalanceException>(
                 () => zkp.ProveBalance(userBalance, requestedAmount)
             );
 
             // Assert
-            Assert.Equal("Insufficient balance", exception.Message);
+            Assert.Contains("Insufficient balance", exception.Message);
+            Assert.Equal(100.0, exception.Balance);
+            Assert.Equal(150.0, exception.RequestedAmount);
         }
 
         [Fact]

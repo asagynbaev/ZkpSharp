@@ -12,7 +12,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Azimbek Sagynbaev</Authors>
     <Description>.NET library for implementing Zero-Knowledge Proofs (ZKP) with support for age, balance, membership, range, and time condition proofs.</Description>
-    <PackageTags>zkp;zero-knowledge-proof;cryptography;privacy;blockchain;stellar</PackageTags>
+    <PackageTags>zkp;zero-knowledge-proof;cryptography;privacy;blockchain;stellar;ton;solana</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
