@@ -24,18 +24,50 @@ mod test {
         salt
     }
 
-    /// Helper to manually compute HMAC for testing
-    fn compute_expected_hmac(env: &Env, data: &Bytes, salt: &Bytes, key: &BytesN<32>) -> BytesN<32> {
-        let contract = ZkpVerifierClient::new(env, &env.register_contract(None, ZkpVerifier));
+    /// Computes HMAC-SHA256 for testing - matches the contract's compute_hmac implementation.
+    /// This is the same algorithm used in the contract to ensure tests match production behavior.
+    fn compute_test_hmac(env: &Env, message: &Bytes, key: &BytesN<32>) -> BytesN<32> {
+        const IPAD: u8 = 0x36;
+        const OPAD: u8 = 0x5c;
+        const BLOCK_SIZE: u32 = 64;
+
+        // Create padded key (64 bytes)
+        let mut key_padded = Bytes::new(env);
+        for i in 0..32 {
+            key_padded.push_back(key.get(i).unwrap());
+        }
+        for _ in 32..BLOCK_SIZE {
+            key_padded.push_back(0);
+        }
+
+        // Compute inner hash: H((K ⊕ ipad) || m)
+        let mut inner_data = Bytes::new(env);
+        for i in 0..BLOCK_SIZE {
+            inner_data.push_back(key_padded.get(i).unwrap() ^ IPAD);
+        }
+        inner_data.append(message);
         
-        // Concatenate data and salt
+        let inner_hash = env.crypto().sha256(&inner_data);
+
+        // Compute outer hash: H((K ⊕ opad) || inner_hash)
+        let mut outer_data = Bytes::new(env);
+        for i in 0..BLOCK_SIZE {
+            outer_data.push_back(key_padded.get(i).unwrap() ^ OPAD);
+        }
+        outer_data.append(&inner_hash.to_bytes());
+
+        env.crypto().sha256(&outer_data)
+    }
+
+    /// Helper to compute expected HMAC proof for test data
+    fn compute_expected_proof(env: &Env, data: &Bytes, salt: &Bytes, key: &BytesN<32>) -> BytesN<32> {
+        // Concatenate data and salt (same as contract does)
         let mut message = Bytes::new(env);
         message.append(data);
         message.append(salt);
         
-        // For testing, we'll use the contract's internal HMAC computation
-        // In real scenario, this would match the C# library's HMAC output
-        env.crypto().sha256(&message) // Simplified for testing
+        // Compute HMAC-SHA256 (matching contract's algorithm)
+        compute_test_hmac(env, &message, key)
     }
 
     #[test]
@@ -53,14 +85,8 @@ mod test {
         let mut data = Bytes::new(&env);
         data.extend_from_array(&[1, 2, 3, 4, 5]);
 
-        // Concatenate data and salt for HMAC
-        let mut message = Bytes::new(&env);
-        message.append(&data);
-        message.append(&salt);
-
-        // For this test, we compute the expected proof using the same logic
-        // In production, this would come from the C# library
-        let proof = env.crypto().sha256(&message);
+        // Compute proof using HMAC-SHA256 (same algorithm as contract)
+        let proof = compute_expected_proof(&env, &data, &salt, &key);
 
         // Verify the proof
         let result = client.verify_proof(&proof, &data, &salt, &key);
@@ -138,11 +164,8 @@ mod test {
         let mut required_data = Bytes::new(&env);
         required_data.extend_from_array(b"500.0");
 
-        // Compute proof for the balance
-        let mut message = Bytes::new(&env);
-        message.append(&balance_data);
-        message.append(&salt);
-        let proof = env.crypto().sha256(&message);
+        // Compute proof using HMAC-SHA256
+        let proof = compute_expected_proof(&env, &balance_data, &salt, &key);
 
         // Verify balance proof
         let result = client.verify_balance_proof(
@@ -154,6 +177,89 @@ mod test {
         );
 
         assert!(result, "Valid balance proof should be verified");
+    }
+
+    #[test]
+    fn test_verify_balance_proof_insufficient() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, ZkpVerifier);
+        let client = ZkpVerifierClient::new(&env, &contract_id);
+
+        let key = create_test_key(&env);
+        let salt = create_test_salt(&env);
+        
+        // Balance data - smaller than required
+        let mut balance_data = Bytes::new(&env);
+        balance_data.extend_from_array(b"99.0");
+
+        // Required amount - larger than balance
+        let mut required_data = Bytes::new(&env);
+        required_data.extend_from_array(b"100.0");
+
+        // Compute valid proof for the balance
+        let proof = compute_expected_proof(&env, &balance_data, &salt, &key);
+
+        // Verify balance proof - should fail because balance < required
+        let result = client.verify_balance_proof(
+            &proof,
+            &balance_data,
+            &required_data,
+            &salt,
+            &key,
+        );
+
+        assert!(!result, "Balance proof should fail when balance < required");
+    }
+
+    #[test]
+    fn test_verify_balance_proof_malformed_input() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, ZkpVerifier);
+        let client = ZkpVerifierClient::new(&env, &contract_id);
+
+        let key = create_test_key(&env);
+        let salt = create_test_salt(&env);
+        
+        // Test with malformed balance data (just "-")
+        let mut malformed_balance = Bytes::new(&env);
+        malformed_balance.extend_from_array(b"-");
+
+        let mut required_data = Bytes::new(&env);
+        required_data.extend_from_array(b"100.0");
+
+        // Compute proof for the malformed data
+        let proof = compute_expected_proof(&env, &malformed_balance, &salt, &key);
+
+        // Should fail because "-" is not a valid number
+        let result = client.verify_balance_proof(
+            &proof,
+            &malformed_balance,
+            &required_data,
+            &salt,
+            &key,
+        );
+
+        assert!(!result, "Malformed balance '-' should fail verification");
+
+        // Test with just decimal point "."
+        let mut dot_only = Bytes::new(&env);
+        dot_only.extend_from_array(b".");
+        
+        let proof2 = compute_expected_proof(&env, &dot_only, &salt, &key);
+        
+        let result2 = client.verify_balance_proof(
+            &proof2,
+            &dot_only,
+            &required_data,
+            &salt,
+            &key,
+        );
+
+        assert!(!result2, "Malformed balance '.' should fail verification");
     }
 
     #[test]
@@ -177,10 +283,8 @@ mod test {
             let mut data = Bytes::new(&env);
             data.extend_from_array(&[i, i + 1, i + 2]);
 
-            let mut message = Bytes::new(&env);
-            message.append(&data);
-            message.append(&salt);
-            let proof = env.crypto().sha256(&message);
+            // Compute proof using HMAC-SHA256
+            let proof = compute_expected_proof(&env, &data, &salt, &key);
 
             proofs.push_back(proof);
             data_items.push_back(data);
@@ -207,20 +311,17 @@ mod test {
         let mut data_items = Vec::new(&env);
         let mut salts = Vec::new(&env);
 
-        // First proof - valid
+        // First proof - valid (using HMAC-SHA256)
         let salt1 = create_test_salt(&env);
         let mut data1 = Bytes::new(&env);
         data1.extend_from_array(&[1, 2, 3]);
-        let mut message1 = Bytes::new(&env);
-        message1.append(&data1);
-        message1.append(&salt1);
-        let proof1 = env.crypto().sha256(&message1);
+        let proof1 = compute_expected_proof(&env, &data1, &salt1, &key);
 
         proofs.push_back(proof1);
         data_items.push_back(data1);
         salts.push_back(salt1);
 
-        // Second proof - INVALID
+        // Second proof - INVALID (wrong hash, all zeros)
         let salt2 = create_test_salt(&env);
         let mut data2 = Bytes::new(&env);
         data2.extend_from_array(&[4, 5, 6]);
