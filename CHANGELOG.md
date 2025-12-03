@@ -14,13 +14,15 @@ This release addresses critical security issues identified by Cursor Bugbot code
 
 #### Rust Smart Contract
 - **Balance comparison logic bug** - `verify_balance_proof` now uses proper numeric comparison via `parse_decimal_to_scaled()` instead of incorrect byte length comparison (`balance_data.len() >= required_amount_data.len()`)
+- **Malformed input vulnerability** - `parse_decimal_to_scaled()` now returns `None` for malformed inputs like "-", ".", or empty bytes instead of `Some(0)`, preventing invalid balance data from being treated as zero
 - **Test algorithm mismatch** - All tests now use `compute_test_hmac()` with proper HMAC-SHA256 (RFC 2104 with ipad/opad) instead of plain SHA256, matching production contract behavior
 
 ### Added
 - `SorobanHelper.MaxBytesLength` constant (255) for explicit length limit documentation
-- `parse_decimal_to_scaled()` function in Rust contract for accurate decimal number parsing
+- `parse_decimal_to_scaled()` function in Rust contract for accurate decimal number parsing with `has_digits` validation
 - `compute_test_hmac()` helper in Rust tests for consistent HMAC computation
 - `test_verify_balance_proof_insufficient()` test case for balance < required scenario
+- `test_verify_balance_proof_malformed_input()` test case for malformed inputs like "-", "."
 
 ### Changed
 - Balance verification now correctly handles edge cases like "99.0" vs "100.0"

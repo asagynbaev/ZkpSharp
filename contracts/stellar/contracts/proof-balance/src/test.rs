@@ -214,6 +214,55 @@ mod test {
     }
 
     #[test]
+    fn test_verify_balance_proof_malformed_input() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, ZkpVerifier);
+        let client = ZkpVerifierClient::new(&env, &contract_id);
+
+        let key = create_test_key(&env);
+        let salt = create_test_salt(&env);
+        
+        // Test with malformed balance data (just "-")
+        let mut malformed_balance = Bytes::new(&env);
+        malformed_balance.extend_from_array(b"-");
+
+        let mut required_data = Bytes::new(&env);
+        required_data.extend_from_array(b"100.0");
+
+        // Compute proof for the malformed data
+        let proof = compute_expected_proof(&env, &malformed_balance, &salt, &key);
+
+        // Should fail because "-" is not a valid number
+        let result = client.verify_balance_proof(
+            &proof,
+            &malformed_balance,
+            &required_data,
+            &salt,
+            &key,
+        );
+
+        assert!(!result, "Malformed balance '-' should fail verification");
+
+        // Test with just decimal point "."
+        let mut dot_only = Bytes::new(&env);
+        dot_only.extend_from_array(b".");
+        
+        let proof2 = compute_expected_proof(&env, &dot_only, &salt, &key);
+        
+        let result2 = client.verify_balance_proof(
+            &proof2,
+            &dot_only,
+            &required_data,
+            &salt,
+            &key,
+        );
+
+        assert!(!result2, "Malformed balance '.' should fail verification");
+    }
+
+    #[test]
     fn test_batch_verification_all_valid() {
         let env = Env::default();
         env.mock_all_auths();

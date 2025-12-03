@@ -152,22 +152,26 @@ impl ZkpVerifier {
     }
 
     /// Parses a decimal string (e.g., "1234.56") to a scaled integer for comparison.
-    /// Returns None if parsing fails.
+    /// Returns None if parsing fails or if no digits are present.
     /// The result is scaled by 10^8 to handle up to 8 decimal places.
     fn parse_decimal_to_scaled(data: &Bytes) -> Option<i128> {
+        // Return None for empty input
+        if data.len() == 0 {
+            return None;
+        }
+
         let mut result: i128 = 0;
         let mut decimal_places: u32 = 0;
         let mut found_decimal = false;
         let mut is_negative = false;
-        let mut started = false;
+        let mut has_digits = false; // Track if at least one digit was parsed
 
         for i in 0..data.len() {
             let byte = data.get(i)?;
             
-            // Handle negative sign
-            if byte == b'-' && !started {
+            // Handle negative sign (only at the start, before any digits)
+            if byte == b'-' && !has_digits && !found_decimal {
                 is_negative = true;
-                started = true;
                 continue;
             }
             
@@ -177,13 +181,12 @@ impl ZkpVerifier {
                     return None; // Multiple decimal points
                 }
                 found_decimal = true;
-                started = true;
                 continue;
             }
 
             // Handle digits
             if byte >= b'0' && byte <= b'9' {
-                started = true;
+                has_digits = true;
                 let digit = (byte - b'0') as i128;
                 result = result.checked_mul(10)?.checked_add(digit)?;
                 
@@ -198,6 +201,11 @@ impl ZkpVerifier {
                 // Invalid character (allow spaces to be ignored)
                 return None;
             }
+        }
+
+        // Must have at least one digit to be valid
+        if !has_digits {
+            return None;
         }
 
         // Scale to 8 decimal places for consistent comparison
