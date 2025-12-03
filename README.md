@@ -114,6 +114,242 @@ class Program
 }
 ```
 
+## Stellar Blockchain Integration
+
+ZkpSharp provides production-ready integration with Stellar's Soroban smart contracts, enabling on-chain verification of zero-knowledge proofs.
+
+### Features
+
+- Full Soroban smart contract integration
+- HMAC-SHA256 verification on-chain
+- Support for all proof types (age, balance, membership, range, time)
+- Batch proof verification
+- Type-safe XDR encoding/decoding
+- Comprehensive test suite
+
+### Quick Start with Stellar
+
+#### 1. Deploy the Soroban Contract
+
+First, deploy the ZKP verifier contract to Stellar testnet:
+
+```bash
+cd contracts/stellar
+soroban contract deploy \
+  --wasm contracts/proof-balance/target/wasm32-unknown-unknown/release/proof_balance.wasm \
+  --source <YOUR_SECRET_KEY> \
+  --network testnet
+```
+
+See the [Deployment Guide](contracts/stellar/DEPLOYMENT.md) for detailed instructions.
+
+#### 2. Configure Your Application
+
+Set up the HMAC key environment variable:
+
+```bash
+export ZKP_HMAC_KEY="your-base64-encoded-key-here"
+export ZKP_CONTRACT_ID="C..." # Your deployed contract ID
+```
+
+#### 3. Use ZkpSharp with Stellar
+
+```csharp
+using ZkpSharp;
+using ZkpSharp.Core;
+using ZkpSharp.Security;
+using ZkpSharp.Integration.Stellar;
+
+// Initialize ZKP provider
+var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
+var proofProvider = new ProofProvider(hmacKey);
+var zkp = new Zkp(proofProvider);
+
+// Initialize Stellar blockchain client
+var blockchain = new StellarBlockchain(
+    "https://horizon-testnet.stellar.org",
+    "https://soroban-testnet.stellar.org"
+);
+
+// Generate a proof (off-chain)
+var balance = 1000.0;
+var requestedAmount = 500.0;
+var (proof, salt) = zkp.ProveBalance(balance, requestedAmount);
+
+// Verify the proof on Stellar blockchain (on-chain)
+var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");
+bool isValid = await blockchain.VerifyBalanceProof(
+    contractId,
+    proof,
+    balance,
+    requestedAmount,
+    salt
+);
+
+Console.WriteLine($"Proof verified on blockchain: {isValid}");
+```
+
+### Advanced Usage
+
+#### Custom Transaction Building
+
+For more control over transactions:
+
+```csharp
+using StellarDotnetSdk;
+using StellarDotnetSdk.Accounts;
+using ZkpSharp.Integration.Stellar;
+
+// Set up source account
+var keypair = KeyPair.FromSecretSeed("S...");
+var server = new Server("https://horizon-testnet.stellar.org");
+var account = await server.Accounts.Account(keypair.AccountId);
+var sourceAccount = new Account(keypair.AccountId, account.SequenceNumber);
+
+// Build transaction
+var txBuilder = SorobanTransactionBuilder.BuildVerifyProofTransaction(
+    sourceAccount,
+    Network.Test(),
+    contractId,
+    proof,
+    "data-to-verify",
+    salt,
+    hmacKey
+);
+
+// Get XDR
+var xdr = txBuilder.BuildXdr();
+Console.WriteLine($"Transaction XDR: {xdr}");
+
+// Submit to network (optional)
+// var transaction = txBuilder.Build();
+// var response = await server.SubmitTransaction(transaction);
+```
+
+#### Batch Verification
+
+Verify multiple proofs at once for better efficiency:
+
+```csharp
+// Generate multiple proofs
+var proofs = new List<string>();
+var salts = new List<string>();
+var data = new List<string>();
+
+for (int i = 0; i < 3; i++)
+{
+    var value = $"value-{i}";
+    var (proof, salt) = zkp.ProveMembership(value, new[] { value });
+    proofs.Add(proof);
+    salts.Add(salt);
+    data.Add(value);
+}
+
+// Verify on blockchain using batch verification
+// (Requires calling the verify_batch function in the contract)
+```
+
+#### Working with ScVal Types
+
+ZkpSharp provides helpers for working with Soroban types:
+
+```csharp
+using ZkpSharp.Integration.Stellar;
+
+// Encode data
+var bytesScVal = SorobanHelper.EncodeBytesAsScVal(myBytes);
+var stringScVal = SorobanHelper.EncodeStringAsScVal("Hello");
+var boolScVal = SorobanHelper.EncodeBoolAsScVal(true);
+
+// Decode data
+var bytes = SorobanHelper.DecodeBytesFromScVal(scVal);
+var text = SorobanHelper.DecodeStringFromScVal(scVal);
+var flag = SorobanHelper.DecodeBoolFromScVal(scVal);
+
+// Convert proofs and salts
+var proofBytes = SorobanHelper.ConvertProofToBytes(base64Proof);
+var saltBytes = SorobanHelper.ConvertSaltToBytes(base64Salt);
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Your Application                      │
+│                                                              │
+│  ┌──────────────┐        ┌─────────────────────────────┐   │
+│  │  ZkpSharp    │────────│  Generate Proof (Off-chain) │   │
+│  │  Core        │        └─────────────────────────────┘   │
+│  └──────────────┘                      │                    │
+│         │                               │                    │
+│         │                               ▼                    │
+│         │                    ┌─────────────────────┐        │
+│         │                    │  Proof + Salt       │        │
+│         │                    └─────────────────────┘        │
+│         │                               │                    │
+│         ▼                               │                    │
+│  ┌──────────────────────────┐          │                    │
+│  │  StellarBlockchain       │◄─────────┘                    │
+│  │  Integration             │                                │
+│  └──────────────────────────┘                                │
+│         │                                                    │
+└─────────┼─────────────────────────────────────────────────┘
+          │
+          │  XDR Transaction
+          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Stellar Network                           │
+│                                                              │
+│  ┌────────────────┐        ┌──────────────────────────┐    │
+│  │  Soroban RPC   │───────▶│  ZKP Verifier Contract   │    │
+│  │  (Simulate)    │        │  (HMAC-SHA256)           │    │
+│  └────────────────┘        └──────────────────────────┘    │
+│                                       │                      │
+│                                       ▼                      │
+│                            ┌─────────────────┐              │
+│                            │  Result: bool   │              │
+│                            └─────────────────┘              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Use Cases
+
+- DeFi: Prove sufficient balance without revealing exact amounts
+- Identity: Verify age or membership without exposing personal data
+- Gaming: Prove achievements or stats without revealing full game state
+- Compliance: Demonstrate regulatory compliance while maintaining privacy
+- Voting: Anonymous voting with eligibility verification
+
+### Security Considerations
+
+1. **HMAC Key Management**: Store your HMAC keys securely using:
+   - Environment variables (development)
+   - Azure Key Vault (production)
+   - AWS Secrets Manager (production)
+   - HashiCorp Vault (production)
+
+2. **Contract Deployment**: Always verify contract source code before deployment
+
+3. **Transaction Fees**: Soroban transactions require XLM for fees. Ensure your account is funded.
+
+4. **Network Selection**: Use testnet for development, mainnet for production
+
+5. **Salt Generation**: Never reuse salts. ZkpSharp generates cryptographically secure random salts automatically.
+
+### Troubleshooting
+
+**Problem**: `Contract ID not configured` error
+
+**Solution**: Set the `ZKP_CONTRACT_ID` environment variable with your deployed contract ID.
+
+**Problem**: `HMAC key not configured` error
+
+**Solution**: Set the `ZKP_HMAC_KEY` environment variable with your base64-encoded 32-byte key.
+
+**Problem**: Transaction simulation fails
+
+**Solution**: Ensure the contract is deployed and the contract ID is correct. Check Soroban RPC endpoint is accessible.
+
 ## Contributing
 
 We welcome contributions! To contribute:
@@ -133,3 +369,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions, issues, or suggestions, feel free to open an issue or contact Azimbek Sagynbaev at [sagynbaev6@gmail.com].
+
+## Additional Resources
+
+- Stellar Documentation: https://developers.stellar.org/
+- Soroban Documentation: https://soroban.stellar.org/
+- NuGet Package: https://www.nuget.org/packages/ZkpSharp

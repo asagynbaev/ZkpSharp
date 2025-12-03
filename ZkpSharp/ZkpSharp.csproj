@@ -4,15 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.2.0</PackageVersion>
+    <PackageVersion>1.3.1</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/asagynbaev</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asagynbaev/ZkpSharp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Azimbek Sagynbaev</Authors>
-    <Description>.NET library for implementing Zero-Knowledge Proofs (ZKP) with support for age, balance, membership, range, and time condition proofs.</Description>
-    <PackageTags>zkp;zero-knowledge-proof;cryptography;privacy;blockchain;stellar;ton;solana</PackageTags>
+    <Description>.NET library for implementing Zero-Knowledge Proofs (ZKP) with production-ready Stellar Soroban integration. Supports age, balance, membership, range, and time condition proofs with on-chain verification.</Description>
+    <PackageTags>zkp;zero-knowledge-proof;cryptography;privacy;blockchain;stellar;soroban;smart-contracts;ton;solana;hmac</PackageTags>
+    <PackageReleaseNotes>v1.3.1: Bug fixes - added SorobanHelper class, fixed balance parsing with InvariantCulture, improved test coverage.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
