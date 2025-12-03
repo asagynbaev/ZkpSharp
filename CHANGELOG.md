@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.3.2] - 2025-12-03
+
+### Security Fixes (Bugbot Review)
+
+This release addresses critical security issues identified by Cursor Bugbot code review.
+
+### Fixed
+
+#### C# Library
+- **SorobanHelper: Data truncation vulnerability** - `EncodeBytesAsScVal` and `EncodeStringAsScVal` now validate input length and throw `ArgumentException` for data exceeding 255 bytes, preventing silent data corruption
+- **SorobanRpcClient: XDR boolean decode false positives** - Replaced unsafe `xdrBytes.Any(b => b == 0x01)` heuristic with proper SCVal format parsing using type discriminant validation
+
+#### Rust Smart Contract
+- **Balance comparison logic bug** - `verify_balance_proof` now uses proper numeric comparison via `parse_decimal_to_scaled()` instead of incorrect byte length comparison (`balance_data.len() >= required_amount_data.len()`)
+- **Test algorithm mismatch** - All tests now use `compute_test_hmac()` with proper HMAC-SHA256 (RFC 2104 with ipad/opad) instead of plain SHA256, matching production contract behavior
+
+### Added
+- `SorobanHelper.MaxBytesLength` constant (255) for explicit length limit documentation
+- `parse_decimal_to_scaled()` function in Rust contract for accurate decimal number parsing
+- `compute_test_hmac()` helper in Rust tests for consistent HMAC computation
+- `test_verify_balance_proof_insufficient()` test case for balance < required scenario
+
+### Changed
+- Balance verification now correctly handles edge cases like "99.0" vs "100.0"
+- XDR boolean decoding now validates SCValType discriminant before extracting value
+
+---
+
+## [1.3.1] - 2025-12-03
+
+### Fixed
+- Added `SorobanHelper` class with SCVal encoding/decoding utilities
+- Fixed balance parsing with `CultureInfo.InvariantCulture` for consistent decimal handling
+- Added `using StellarDotnetSdk.Accounts` for `KeyPair` class access in tests
+- Improved test coverage for Stellar integration
+
+---
+
 ## [1.3.0] - 2025-12-02
 
 ### Major Release: Production-Ready Stellar Integration

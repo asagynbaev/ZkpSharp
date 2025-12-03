@@ -229,14 +229,42 @@ namespace ZkpSharp.Integration.Stellar
                 // Decode XDR base64 string
                 var xdrBytes = Convert.FromBase64String(xdrBase64);
                 
-                // Simplified parsing - proper XDR decoding requires Soroban SDK
-                // This is a best-effort attempt
-                if (xdrBytes.Length >= 2)
+                // Soroban SCVal boolean format:
+                // - First 4 bytes: type discriminant (0x00000000 for SCV_BOOL)
+                // - Next 4 bytes: value (0x00000000 for false, 0x00000001 for true)
+                // Minimum 8 bytes required for a valid SCVal boolean
+                
+                if (xdrBytes.Length < 4)
                 {
-                    // Basic heuristic: look for boolean indicators
-                    return xdrBytes.Any(b => b == 0x01);
+                    return false;
                 }
 
+                // Check for SCVal boolean type discriminant
+                // SCV_BOOL = 0, SCV_TRUE = 1, SCV_FALSE = 0 (in older format)
+                // In XDR big-endian format:
+                // - Type 0 (SCV_BOOL) with value in next bytes
+                // - Or Type 1 (SCV_VOID which we treat as false)
+                
+                // Check the type discriminant (first 4 bytes, big-endian)
+                int typeDiscriminant = (xdrBytes[0] << 24) | (xdrBytes[1] << 16) | 
+                                       (xdrBytes[2] << 8) | xdrBytes[3];
+
+                // SCValType::SCV_BOOL = 0
+                if (typeDiscriminant == 0 && xdrBytes.Length >= 8)
+                {
+                    // For SCV_BOOL, the value is in the next 4 bytes
+                    int value = (xdrBytes[4] << 24) | (xdrBytes[5] << 16) | 
+                               (xdrBytes[6] << 8) | xdrBytes[7];
+                    return value != 0;
+                }
+
+                // SCValType::SCV_TRUE = 1 (alternative representation)
+                if (typeDiscriminant == 1)
+                {
+                    return true;
+                }
+
+                // Default to false for unknown formats
                 return false;
             }
             catch (FormatException ex)

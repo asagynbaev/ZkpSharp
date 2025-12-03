@@ -100,8 +100,8 @@ impl ZkpVerifier {
     /// # Arguments
     /// * `env` - The Soroban environment
     /// * `proof` - The proof hash to verify
-    /// * `balance_data` - The balance value as bytes
-    /// * `required_amount_data` - The required amount as bytes
+    /// * `balance_data` - The balance value as bytes (decimal string, e.g., "1000.50")
+    /// * `required_amount_data` - The required amount as bytes (decimal string, e.g., "500.25")
     /// * `salt` - The cryptographic salt
     /// * `hmac_key` - The HMAC secret key
     /// 
@@ -128,9 +128,20 @@ impl ZkpVerifier {
             return false;
         }
 
-        // Additional validation: ensure balance >= required_amount
-        // This is a simplified check - in production, you'd parse the actual numeric values
-        let balance_sufficient = balance_data.len() >= required_amount_data.len();
+        // Parse and compare numeric values
+        let balance = Self::parse_decimal_to_scaled(&balance_data);
+        let required = Self::parse_decimal_to_scaled(&required_amount_data);
+
+        let balance_sufficient = match (balance, required) {
+            (Some(b), Some(r)) => b >= r,
+            _ => {
+                env.events().publish(
+                    (Symbol::new(&env, "error"),),
+                    VerificationError::InvalidInput as u32,
+                );
+                false
+            }
+        };
 
         env.events().publish(
             (Symbol::new(&env, "balance_check"),),
@@ -138,6 +149,70 @@ impl ZkpVerifier {
         );
 
         proof_valid && balance_sufficient
+    }
+
+    /// Parses a decimal string (e.g., "1234.56") to a scaled integer for comparison.
+    /// Returns None if parsing fails.
+    /// The result is scaled by 10^8 to handle up to 8 decimal places.
+    fn parse_decimal_to_scaled(data: &Bytes) -> Option<i128> {
+        let mut result: i128 = 0;
+        let mut decimal_places: u32 = 0;
+        let mut found_decimal = false;
+        let mut is_negative = false;
+        let mut started = false;
+
+        for i in 0..data.len() {
+            let byte = data.get(i)?;
+            
+            // Handle negative sign
+            if byte == b'-' && !started {
+                is_negative = true;
+                started = true;
+                continue;
+            }
+            
+            // Handle decimal point
+            if byte == b'.' {
+                if found_decimal {
+                    return None; // Multiple decimal points
+                }
+                found_decimal = true;
+                started = true;
+                continue;
+            }
+
+            // Handle digits
+            if byte >= b'0' && byte <= b'9' {
+                started = true;
+                let digit = (byte - b'0') as i128;
+                result = result.checked_mul(10)?.checked_add(digit)?;
+                
+                if found_decimal {
+                    decimal_places += 1;
+                    if decimal_places > 8 {
+                        // Too many decimal places, stop processing
+                        break;
+                    }
+                }
+            } else if byte != b' ' {
+                // Invalid character (allow spaces to be ignored)
+                return None;
+            }
+        }
+
+        // Scale to 8 decimal places for consistent comparison
+        const SCALE_FACTOR: u32 = 8;
+        let scale_needed = SCALE_FACTOR.saturating_sub(decimal_places);
+        
+        for _ in 0..scale_needed {
+            result = result.checked_mul(10)?;
+        }
+
+        if is_negative {
+            result = -result;
+        }
+
+        Some(result)
     }
 
     /// Batch verification of multiple proofs for efficiency.

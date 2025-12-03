@@ -13,11 +13,25 @@ namespace ZkpSharp.Integration.Stellar
         /// </summary>
         /// <param name="bytes">The bytes to encode.</param>
         /// <returns>Base64-encoded SCVal representation.</returns>
+        /// <summary>
+        /// Maximum length for byte data in simplified SCVal encoding.
+        /// For larger data, use proper XDR encoding with Stellar SDK.
+        /// </summary>
+        public const int MaxBytesLength = 255;
+
         public static string EncodeBytesAsScVal(byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0)
             {
                 throw new ArgumentException("Bytes cannot be null or empty.", nameof(bytes));
+            }
+
+            if (bytes.Length > MaxBytesLength)
+            {
+                throw new ArgumentException(
+                    $"Bytes length ({bytes.Length}) exceeds maximum allowed ({MaxBytesLength}). " +
+                    "For larger data, use proper XDR encoding with Stellar SDK.",
+                    nameof(bytes));
             }
 
             // For SCVal bytes type, we prepend a type indicator and encode
@@ -72,6 +86,14 @@ namespace ZkpSharp.Integration.Stellar
             }
 
             var bytes = Encoding.UTF8.GetBytes(value);
+
+            if (bytes.Length > MaxBytesLength)
+            {
+                throw new ArgumentException(
+                    $"String byte length ({bytes.Length}) exceeds maximum allowed ({MaxBytesLength}). " +
+                    "For larger strings, use proper XDR encoding with Stellar SDK.",
+                    nameof(value));
+            }
 
             // Type 14 (0x0E) is also used for strings in Soroban (as bytes)
             var scVal = new byte[bytes.Length + 4];
