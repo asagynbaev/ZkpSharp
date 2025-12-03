@@ -28,6 +28,15 @@ This release addresses critical security issues identified by Cursor Bugbot code
 - Balance verification now correctly handles edge cases like "99.0" vs "100.0"
 - XDR boolean decoding now validates SCValType discriminant before extracting value
 
+### Dependencies Updated
+- `stellar-dotnet-sdk`: 13.0.0 → 14.0.1
+- `stellar-dotnet-sdk-xdr`: 13.0.0 → 14.0.1
+- `coverlet.collector`: 6.0.0 → 6.0.4
+- `Microsoft.NET.Test.Sdk`: 17.8.0 → 17.12.0
+- `xunit`: 2.9.2 → 2.9.3
+- `xunit.runner.visualstudio`: 2.5.3 → 3.0.2
+- GitHub Actions: `actions/checkout@v2` → `v4`, `actions/setup-dotnet@v1` → `v4`
+
 ---
 
 ## [1.3.1] - 2025-12-03
