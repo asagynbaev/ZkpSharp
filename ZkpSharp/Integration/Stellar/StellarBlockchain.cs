@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using StellarDotnetSdk;
 using StellarDotnetSdk.Accounts;
@@ -234,7 +235,7 @@ namespace ZkpSharp.Integration.Stellar
             {
                 if (string.IsNullOrEmpty(balance.AssetCode))
                 {
-                    if (double.TryParse(balance.BalanceString, out double result))
+                    if (double.TryParse(balance.BalanceString, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
                     {
                         return result;
                     }
