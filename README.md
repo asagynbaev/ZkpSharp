@@ -1,15 +1,32 @@
 # ZkpSharp
 
-**ZkpSharp** is a .NET library for implementing Zero-Knowledge Proofs (ZKP). This library allows you to securely prove certain information (such as age or balance) without revealing the actual data. It uses cryptographic hashes and salts to ensure privacy and security.
+**ZkpSharp** is a production-ready .NET library for implementing Zero-Knowledge Proofs (ZKP) with full Stellar Soroban blockchain integration. This library allows you to securely prove certain information (such as age or balance) without revealing the actual data.
 
 ## Features
 
+### Privacy Proofs (HMAC-based Commitment Schemes)
+Fast, lightweight proofs for basic privacy needs:
+
 - **Proof of Age**: Prove that your age is above a certain threshold without revealing your actual birthdate.
 - **Proof of Balance**: Prove that you have sufficient balance to make a transaction without revealing your full balance.
-- **Proof of Membership**: Prove that a given value belongs to a set of valid values (e.g., proving you belong to a specific group).
+- **Proof of Membership**: Prove that a given value belongs to a set of valid values.
 - **Proof of Range**: Prove that a value lies within a specified range without revealing the exact value.
-- **Proof of Time Condition**: Prove that an event occurred before or after a specified date without revealing the event date.
-- **Secure Hashing**: Uses SHA-256 hashing combined with a random salt to ensure secure and non-reversible proofs.
+- **Proof of Time Condition**: Prove that an event occurred before or after a specified date.
+- **Secure Hashing**: Uses HMAC-SHA256 with cryptographic salt for secure, non-reversible proofs.
+
+### True Zero-Knowledge Proofs (Bulletproofs)
+Mathematically sound ZK proofs using elliptic curve cryptography:
+
+- **ZK Range Proofs**: Prove a value is within a range without revealing it (using Pedersen commitments).
+- **ZK Age Proofs**: Prove minimum age without revealing exact age or birthdate.
+- **ZK Balance Proofs**: Prove sufficient balance without revealing actual amount.
+- **Serialization**: Compact proof serialization for storage and transmission.
+
+### Stellar Blockchain Integration
+- Full Soroban SDK 25 support with BLS12-381 cryptography.
+- On-chain verification via `InvokeHostFunctionOp`.
+- `SorobanTransactionBuilder` for XDR construction.
+- Support for both HMAC and true ZK verification contracts.
 
 
 ## Installation
@@ -67,24 +84,17 @@ You can prove that you are over a certain age (e.g., 18 years old) without revea
 #### Example:
 
 ```csharp
-using ZkpSharp;
-using System;
+using ZkpSharp.Core;
+using ZkpSharp.Security;
 
-class Program
-{
-    static void Main()
-    {
-        var zkp = new ZKP();
-        var dateOfBirth = new DateTime(2000, 1, 1); // The user's date of birth
+var proofProvider = new ProofProvider("your-base64-hmac-key");
+var zkp = new Zkp(proofProvider);
+var dateOfBirth = new DateTime(2000, 1, 1);
 
-        // Generate proof of age
-        var (proof, salt) = zkp.ProveAge(dateOfBirth);
-
-        // Verify the proof of age
-        bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
-        Console.WriteLine($"Age proof valid: {isValid}");
-    }
-}
+// Generate and verify proof of age
+var (proof, salt) = zkp.ProveAge(dateOfBirth);
+bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
+Console.WriteLine($"Age proof valid: {isValid}");
 ```
 
 ### Proof of Balance
@@ -114,18 +124,50 @@ class Program
 }
 ```
 
+### True Zero-Knowledge Proofs (Bulletproofs)
+
+For mathematically sound ZK proofs that reveal absolutely nothing about the secret value:
+
+```csharp
+using ZkpSharp.Security;
+using ZkpSharp.Interfaces;
+
+// Initialize Bulletproofs provider
+IZkProofProvider zkProvider = new BulletproofsProvider();
+
+// Prove age >= 18 without revealing exact age
+var birthDate = new DateTime(1990, 5, 15);
+var (ageProof, ageCommitment) = zkProvider.ProveAge(birthDate, minAge: 18);
+bool ageValid = zkProvider.VerifyAge(ageProof, ageCommitment, minAge: 18);
+
+// Prove balance >= required without revealing actual balance
+long balance = 10000;
+long required = 5000;
+var (balanceProof, balanceCommitment) = zkProvider.ProveBalance(balance, required);
+bool balanceValid = zkProvider.VerifyBalance(balanceProof, balanceCommitment, required);
+
+// Prove value in range [min, max] without revealing value
+var (rangeProof, rangeCommitment) = zkProvider.ProveRange(value: 50, min: 0, max: 100);
+bool rangeValid = zkProvider.VerifyRange(rangeProof, rangeCommitment, min: 0, max: 100);
+
+// Serialize proofs for storage/transmission
+string serialized = zkProvider.SerializeProof(rangeProof, rangeCommitment);
+var (proof, commitment) = zkProvider.DeserializeProof(serialized);
+```
+
 ## Stellar Blockchain Integration
 
 ZkpSharp provides production-ready integration with Stellar's Soroban smart contracts, enabling on-chain verification of zero-knowledge proofs.
 
 ### Features
 
-- Full Soroban smart contract integration
-- HMAC-SHA256 verification on-chain
-- Support for all proof types (age, balance, membership, range, time)
-- Batch proof verification
-- Type-safe XDR encoding/decoding
-- Comprehensive test suite
+- **Soroban SDK 25**: Latest SDK with BLS12-381 and BN254 cryptographic support.
+- **HMAC-SHA256 Verification**: Fast on-chain commitment verification.
+- **True ZK Verification**: BLS12-381 based range proof verification.
+- **InvokeHostFunctionOp**: Proper Soroban transaction construction.
+- **SorobanTransactionBuilder**: Type-safe XDR encoding for contract calls.
+- **Batch Verification**: Verify multiple proofs in a single transaction.
+- **Comprehensive Testing**: Unit and integration tests included.
 
 ### Quick Start with Stellar
 

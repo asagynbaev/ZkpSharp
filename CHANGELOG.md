@@ -1,5 +1,66 @@
 # Changelog
 
+## [1.4.0] - 2026-03-03
+
+### Major Release: True Zero-Knowledge Proofs & Soroban SDK 25
+
+This release introduces true Zero-Knowledge Proofs using Bulletproofs and updates to Soroban SDK 25 with BLS12-381 support.
+
+### Added
+
+#### True Zero-Knowledge Proofs (Bulletproofs)
+- **`IZkProofProvider` interface** - Abstraction for ZK proof providers
+- **`BulletproofsProvider` class** - Full Bulletproofs implementation using Secp256k1.ZKP
+  - `ProveRange()` / `VerifyRange()` - ZK range proofs with Pedersen commitments
+  - `ProveAge()` / `VerifyAge()` - ZK age proofs without revealing exact age
+  - `ProveBalance()` / `VerifyBalance()` - ZK balance proofs
+  - `SerializeProof()` / `DeserializeProof()` - Compact serialization
+
+#### Rust Contract Enhancements
+- **`verify_zk_range_proof()`** - BLS12-381 based ZK range verification
+- **`verify_zk_age_proof()`** - On-chain ZK age verification
+- **`verify_zk_balance_proof()`** - On-chain ZK balance verification
+- **Fiat-Shamir challenge computation** - Non-interactive ZK verification
+- Extended error codes: `InvalidCommitment`, `InvalidRange`
+
+#### Stellar Integration
+- **`SorobanTransactionBuilder` class** - Full XDR construction for contract calls
+  - `BuildVerifyProofTransaction()` - HMAC proof verification
+  - `BuildVerifyBalanceProofTransaction()` - Balance proof verification
+  - `BuildVerifyZkRangeProofTransaction()` - ZK range verification
+  - `BuildVerifyZkAgeProofTransaction()` - ZK age verification
+  - `BuildVerifyZkBalanceProofTransaction()` - ZK balance verification
+- **`StellarBlockchain` enhancements**
+  - `VerifyProofWithSourceAccount()` - Proof verification with account
+  - `VerifyBalanceProofWithSourceAccount()` - Balance verification with account
+  - Constructor now accepts `hmacKey` parameter
+- **StrKey utilities** - Contract ID decoding
+
+#### Test Coverage
+- 10 new Bulletproofs tests
+- 5 new SorobanTransactionBuilder tests
+- 27 new core ZKP tests (Membership, Range, TimeCondition, edge cases)
+- 4 new integration tests for ZK on-chain verification
+
+#### Documentation
+- **`STELLAR_REALITY_CHECK.md`** - Honest assessment of capabilities
+- **`INTEGRATION_STATUS.md`** - Current feature and API status
+- Updated README with Bulletproofs examples
+
+### Changed
+- **Soroban SDK**: 22 → 25 (enables BLS12-381 cryptography)
+- **Contract architecture**: Added ZK verification alongside HMAC
+- **StellarBlockchain**: Now implements InvokeHostFunctionOp instead of throwing NotImplementedException
+
+### Dependencies
+- `soroban-sdk`: 22 → 25
+
+### Breaking Changes
+- Rust contract requires recompilation with Soroban SDK 25
+- Contract deployment required for new ZK functions
+
+---
+
 ## [1.3.2] - 2025-12-03
 
 ### Security Fixes (Bugbot Review)

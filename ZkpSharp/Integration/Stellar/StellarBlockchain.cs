@@ -16,6 +16,7 @@ namespace ZkpSharp.Integration.Stellar
         private readonly string _serverUrl;
         private readonly string _sorobanRpcUrl;
         private readonly Network _network;
+        private readonly string? _hmacKey;
         private SorobanRpcClient? _rpcClient;
 
         /// <summary>
@@ -24,7 +25,8 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="serverUrl">The Horizon API server URL.</param>
         /// <param name="sorobanRpcUrl">Optional Soroban RPC URL. If not provided, will be inferred from server URL.</param>
         /// <param name="network">Optional network configuration. If not provided, will be inferred from server URL.</param>
-        public StellarBlockchain(string serverUrl, string? sorobanRpcUrl = null, Network? network = null)
+        /// <param name="hmacKey">Optional HMAC key for proof verification (Base64 encoded, 32 bytes).</param>
+        public StellarBlockchain(string serverUrl, string? sorobanRpcUrl = null, Network? network = null, string? hmacKey = null)
         {
             if (string.IsNullOrEmpty(serverUrl))
             {
@@ -37,6 +39,9 @@ namespace ZkpSharp.Integration.Stellar
             
             // Default network based on server URL
             _network = network ?? GetDefaultNetwork(serverUrl);
+            
+            // Store HMAC key for verification
+            _hmacKey = hmacKey;
         }
 
         private string GetDefaultSorobanRpcUrl(string horizonUrl)
@@ -111,31 +116,89 @@ namespace ZkpSharp.Integration.Stellar
                 throw new ArgumentException("Value cannot be null or empty.", nameof(value));
             }
 
-            // NOTE: Direct Soroban contract invocation from C# requires complex XDR encoding
-            // that is not yet fully supported in the current Stellar .NET SDK.
-            //
-            // RECOMMENDED APPROACHES:
-            //
-            // 1. OFF-CHAIN VERIFICATION (Fastest, works today):
-            //    var zkp = new Zkp(new ProofProvider(hmacKey));
-            //    bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
-            //
-            // 2. HYBRID APPROACH (Full on-chain support):
-            //    - Generate proofs in C# (as above)
-            //    - Use Stellar JavaScript SDK to invoke contract
-            //    - See documentation for examples
-            //
-            // 3. CUSTOM XDR IMPLEMENTATION:
-            //    - Implement InvokeHostFunctionOp XDR encoding
-            //    - Use VerifyProofWithTransactionXdrAsync with your XDR
-            //
-            // See STELLAR_REALITY_CHECK.md and INTEGRATION_STATUS.md for detailed guides
+            var hmacKey = GetHmacKeyForVerification();
             
-            throw new NotImplementedException(
-                "On-chain verification requires Soroban XDR encoding. " +
-                "Use off-chain verification (Zkp.VerifyAge/VerifyBalance) or " +
-                "hybrid approach with Stellar JS SDK. " +
-                "See STELLAR_REALITY_CHECK.md for complete guide.");
+            try
+            {
+                var transactionBuilder = new SorobanTransactionBuilder(_network);
+                var transactionXdr = transactionBuilder.BuildVerifyProofTransaction(
+                    contractId: contractId,
+                    proof: proof,
+                    data: value,
+                    salt: salt,
+                    hmacKey: hmacKey
+                );
+
+                var rpcClient = GetRpcClient();
+                return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+            }
+            catch (NotSupportedException)
+            {
+                throw new InvalidOperationException(
+                    "On-chain verification requires a valid source account. " +
+                    "Use VerifyProofWithSourceAccount method or provide a pre-built transaction XDR.");
+            }
+        }
+
+        /// <summary>
+        /// Verifies a zero-knowledge proof on the blockchain with a specific source account.
+        /// </summary>
+        /// <param name="sourceAccountId">The source account ID for the transaction.</param>
+        /// <param name="contractId">The smart contract address or ID.</param>
+        /// <param name="proof">The proof to verify (Base64 encoded HMAC-SHA256, 32 bytes).</param>
+        /// <param name="salt">The salt used to generate the proof (Base64 encoded, min 16 bytes).</param>
+        /// <param name="value">The value that was proven.</param>
+        /// <returns>True if the proof is valid, false otherwise.</returns>
+        public async Task<bool> VerifyProofWithSourceAccount(
+            string sourceAccountId,
+            string contractId, 
+            string proof, 
+            string salt, 
+            string value)
+        {
+            if (string.IsNullOrEmpty(sourceAccountId))
+            {
+                throw new ArgumentException("Source account ID cannot be null or empty.", nameof(sourceAccountId));
+            }
+
+            if (string.IsNullOrEmpty(contractId))
+            {
+                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
+            }
+
+            if (string.IsNullOrEmpty(proof))
+            {
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            }
+
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new ArgumentException("Salt cannot be null or empty.", nameof(salt));
+            }
+
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentException("Value cannot be null or empty.", nameof(value));
+            }
+
+            var hmacKey = GetHmacKeyForVerification();
+
+            // Get source account from Horizon
+            Server server = new(_serverUrl);
+            AccountResponse sourceAccount = await server.Accounts.Account(sourceAccountId);
+
+            var transactionBuilder = new SorobanTransactionBuilder(_network);
+            var transactionXdr = transactionBuilder.BuildVerifyProofTransactionWithAccount(
+                sourceAccount: sourceAccount,
+                contractId: contractId,
+                proof: proof,
+                data: value,
+                salt: salt,
+                hmacKey: hmacKey
+            );
+
+            var rpcClient = GetRpcClient();
+            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
         }
 
         /// <summary>
@@ -159,20 +222,111 @@ namespace ZkpSharp.Integration.Stellar
                 throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
             }
 
-            // Same limitation as VerifyProof - see that method for details
-            throw new NotImplementedException(
-                "On-chain verification requires Soroban XDR encoding. " +
-                "Use off-chain verification (Zkp.VerifyBalance) or " +
-                "hybrid approach with Stellar JS SDK. " +
-                "See STELLAR_REALITY_CHECK.md for complete guide.");
+            if (string.IsNullOrEmpty(proof))
+            {
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            }
+
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new ArgumentException("Salt cannot be null or empty.", nameof(salt));
+            }
+
+            var hmacKey = GetHmacKeyForVerification();
+            var balanceStr = balance.ToString(CultureInfo.InvariantCulture);
+            var requiredAmountStr = requiredAmount.ToString(CultureInfo.InvariantCulture);
+
+            try
+            {
+                var transactionBuilder = new SorobanTransactionBuilder(_network);
+                var transactionXdr = transactionBuilder.BuildVerifyBalanceProofTransaction(
+                    contractId: contractId,
+                    proof: proof,
+                    balanceData: balanceStr,
+                    requiredAmountData: requiredAmountStr,
+                    salt: salt,
+                    hmacKey: hmacKey
+                );
+
+                var rpcClient = GetRpcClient();
+                return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+            }
+            catch (NotSupportedException)
+            {
+                throw new InvalidOperationException(
+                    "On-chain verification requires a valid source account. " +
+                    "Use VerifyBalanceProofWithSourceAccount method or provide a pre-built transaction XDR.");
+            }
         }
 
         /// <summary>
-        /// Gets the HMAC key for verification from environment or configuration.
+        /// Verifies a balance proof on the blockchain with a specific source account.
+        /// </summary>
+        /// <param name="sourceAccountId">The source account ID for the transaction.</param>
+        /// <param name="contractId">The smart contract address or ID.</param>
+        /// <param name="proof">The proof to verify (Base64 encoded).</param>
+        /// <param name="balance">The balance value.</param>
+        /// <param name="requiredAmount">The required amount.</param>
+        /// <param name="salt">The salt used to generate the proof (Base64 encoded).</param>
+        /// <returns>True if the proof is valid and balance is sufficient, false otherwise.</returns>
+        public async Task<bool> VerifyBalanceProofWithSourceAccount(
+            string sourceAccountId,
+            string contractId,
+            string proof,
+            double balance,
+            double requiredAmount,
+            string salt)
+        {
+            if (string.IsNullOrEmpty(sourceAccountId))
+            {
+                throw new ArgumentException("Source account ID cannot be null or empty.", nameof(sourceAccountId));
+            }
+
+            if (string.IsNullOrEmpty(contractId))
+            {
+                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
+            }
+
+            if (string.IsNullOrEmpty(proof))
+            {
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            }
+
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new ArgumentException("Salt cannot be null or empty.", nameof(salt));
+            }
+
+            var hmacKey = GetHmacKeyForVerification();
+            var balanceStr = balance.ToString(CultureInfo.InvariantCulture);
+            var requiredAmountStr = requiredAmount.ToString(CultureInfo.InvariantCulture);
+
+            // Get source account from Horizon
+            Server server = new(_serverUrl);
+            AccountResponse sourceAccount = await server.Accounts.Account(sourceAccountId);
+
+            var transactionBuilder = new SorobanTransactionBuilder(_network);
+            var transactionXdr = transactionBuilder.BuildVerifyBalanceProofTransactionWithAccount(
+                sourceAccount: sourceAccount,
+                contractId: contractId,
+                proof: proof,
+                balanceData: balanceStr,
+                requiredAmountData: requiredAmountStr,
+                salt: salt,
+                hmacKey: hmacKey
+            );
+
+            var rpcClient = GetRpcClient();
+            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+        }
+
+        /// <summary>
+        /// Gets the HMAC key for verification from constructor, environment, or configuration.
         /// </summary>
         /// <returns>The HMAC key as a Base64 string.</returns>
         /// <remarks>
         /// In production, this should be securely managed through:
+        /// - Constructor parameter (recommended for programmatic use)
         /// - Environment variables
         /// - Azure Key Vault
         /// - AWS Secrets Manager
@@ -180,17 +334,24 @@ namespace ZkpSharp.Integration.Stellar
         /// </remarks>
         private string GetHmacKeyForVerification()
         {
-            // Try to get from environment variable first
-            var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
-            
-            if (string.IsNullOrEmpty(hmacKey))
+            // First try constructor-provided key
+            if (!string.IsNullOrEmpty(_hmacKey))
             {
-                throw new InvalidOperationException(
-                    "HMAC key not configured. Set the ZKP_HMAC_KEY environment variable " +
-                    "or configure secure key management.");
+                return _hmacKey;
             }
 
-            return hmacKey;
+            // Try to get from environment variable
+            var envKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
+            
+            if (!string.IsNullOrEmpty(envKey))
+            {
+                return envKey;
+            }
+
+            throw new InvalidOperationException(
+                "HMAC key not configured. Provide it via constructor, " +
+                "set the ZKP_HMAC_KEY environment variable, " +
+                "or use a secure key management system.");
         }
 
         /// <summary>

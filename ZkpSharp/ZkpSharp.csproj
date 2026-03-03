@@ -1,19 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.3.2</PackageVersion>
+    <PackageVersion>1.4.0</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/asagynbaev</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asagynbaev/ZkpSharp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Azimbek Sagynbaev</Authors>
-    <Description>.NET library for implementing Zero-Knowledge Proofs (ZKP) with production-ready Stellar Soroban integration. Supports age, balance, membership, range, and time condition proofs with on-chain verification.</Description>
-    <PackageTags>zkp;zero-knowledge-proof;cryptography;privacy;blockchain;stellar;soroban;smart-contracts;ton;solana;hmac</PackageTags>
-    <PackageReleaseNotes>v1.3.2: Security fixes - SorobanHelper validates max 255 bytes to prevent truncation, XDR boolean decode uses proper SCVal format instead of heuristic, Rust contract uses numeric comparison for balance verification, tests use HMAC-SHA256 matching production.</PackageReleaseNotes>
+    <Description>Production-ready .NET library for Zero-Knowledge Proofs (ZKP) with true Bulletproofs support and full Stellar Soroban integration. Features HMAC-based privacy proofs and mathematically sound ZK range proofs via Secp256k1.ZKP.</Description>
+    <PackageTags>zkp;zero-knowledge-proof;bulletproofs;cryptography;privacy;blockchain;stellar;soroban;smart-contracts;bls12-381;hmac;pedersen-commitment</PackageTags>
+    <PackageReleaseNotes>v1.4.0: True ZKP via Bulletproofs-style proofs (IZkProofProvider, BulletproofsProvider), Soroban SDK 25 with BLS12-381, SorobanTransactionBuilder for XDR construction, ZK range/age/balance verification on-chain, comprehensive test coverage with 64+ tests.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
