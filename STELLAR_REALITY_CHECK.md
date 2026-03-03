@@ -6,14 +6,15 @@ This document provides an honest assessment of ZkpSharp's Stellar integration ca
 
 ### Off-Chain Proof Generation (Full Support)
 - Generate HMAC-based privacy proofs in C#
-- Generate Bulletproofs-based ZK proofs in C#
+- Generate real Bulletproofs ZK proofs on secp256k1 in pure C# (no external crypto dependencies)
+- Pedersen commitments, inner product argument, Fiat-Shamir transcript
 - Serialize/deserialize proofs for transmission
 - All proof types: Age, Balance, Membership, Range, TimeCondition
 
-### On-Chain Verification (Full Support with Soroban)
-- Rust Soroban smart contract for HMAC-SHA256 verification
-- Rust Soroban smart contract for BLS12-381 ZK verification
-- Batch verification of multiple proofs
+### On-Chain Verification
+- **HMAC proofs**: Full HMAC-SHA256 recomputation and constant-time comparison on-chain (complete verification)
+- **Bulletproofs**: Structural validation only (point prefix checks, IPA length validation). Transcript binding hash is emitted as an event for off-chain auditing. **Full Bulletproofs verification (EC math) must be performed off-chain** using `BulletproofsProvider.VerifyRange()` -- Soroban does not natively support secp256k1 point arithmetic
+- Batch HMAC verification of multiple proofs
 - Proper numeric balance comparison (not byte-length comparison)
 
 ### Transaction Building (Production-Ready)
@@ -69,11 +70,12 @@ This document provides an honest assessment of ZkpSharp's Stellar integration ca
 
 | Feature | HMAC-based (Privacy Proofs) | Bulletproofs (True ZKP) |
 |---------|----------------------------|-------------------------|
-| Speed | Fast (~1ms) | Slower (~100ms) |
-| Proof Size | 32 bytes | ~600 bytes |
+| Speed | Fast (~1ms) | Slower (~200-500ms prove, ~50ms verify) |
+| Proof Size | 32 bytes | ~690 bytes (64-bit range) |
 | Zero-Knowledge | No (commitment scheme) | Yes (mathematically proven) |
-| On-Chain Cost | Low | Higher |
-| Use Case | Basic privacy | High-security scenarios |
+| Curve | N/A (SHA-256) | secp256k1 |
+| On-Chain Verification | Full HMAC recomputation | Structural + Fiat-Shamir binding (full EC off-chain) |
+| Use Case | Basic privacy, fast checks | High-security scenarios, regulatory compliance |
 
 ## Recommended Approach
 
@@ -100,13 +102,17 @@ var isValid = await blockchain.VerifyProofWithSourceAccount(
 
 ## Limitations
 
-1. **Transaction Signing**: ZkpSharp builds unsigned transactions. You must sign with your secret key before submission.
+1. **On-chain Bulletproofs verification**: Soroban does not natively support secp256k1 elliptic curve operations. Full Bulletproofs verification (point decompression, multi-exponentiation, inner product check) must happen off-chain. The on-chain contract performs structural validation and Fiat-Shamir transcript binding as a tamper-detection mechanism.
 
-2. **Fee Estimation**: Use Soroban RPC `simulateTransaction` to get accurate fee estimates.
+2. **Transaction Signing**: ZkpSharp builds unsigned transactions. You must sign with your secret key before submission.
 
-3. **Contract Deployment**: The Rust contract must be deployed separately using Stellar CLI.
+3. **Fee Estimation**: Use Soroban RPC `simulateTransaction` to get accurate fee estimates.
 
-4. **Network Fees**: On-chain verification requires XLM for transaction fees.
+4. **Contract Deployment**: The Rust contract must be deployed separately using Stellar CLI.
+
+5. **Network Fees**: On-chain verification requires XLM for transaction fees.
+
+6. **Proof generation performance**: Bulletproofs proof generation involves multiple EC scalar multiplications and is slower than HMAC-based proofs. For latency-sensitive applications, consider caching proofs or generating them asynchronously.
 
 ## Security Considerations
 

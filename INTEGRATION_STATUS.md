@@ -1,6 +1,6 @@
 # ZkpSharp Integration Status
 
-Current version: 1.4.0-preview
+Current version: 2.0.0
 
 ## Feature Status
 
@@ -9,7 +9,7 @@ Current version: 1.4.0-preview
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `Zkp` (HMAC-based proofs) | Complete | Age, Balance, Membership, Range, TimeCondition |
-| `BulletproofsProvider` | Complete | True ZK Range/Age/Balance proofs |
+| `BulletproofsProvider` | Complete | Real Bulletproofs on secp256k1 (from scratch, pure C#) |
 | `IZkProofProvider` interface | Complete | Abstraction for ZK providers |
 | `ProofProvider` | Complete | HMAC-SHA256 implementation |
 | `StellarBlockchain` | Complete | Horizon + Soroban RPC integration |
@@ -24,7 +24,7 @@ Current version: 1.4.0-preview
 | `verify_proof` | Complete | HMAC-SHA256 verification |
 | `verify_balance_proof` | Complete | With numeric comparison |
 | `verify_batch` | Complete | Multiple proofs at once |
-| `verify_zk_range_proof` | Complete | BLS12-381 based |
+| `verify_zk_range_proof` | Complete | Bulletproofs structural validation + Fiat-Shamir binding |
 | `verify_zk_age_proof` | Complete | Range proof wrapper |
 | `verify_zk_balance_proof` | Complete | Range proof wrapper |
 
@@ -46,7 +46,7 @@ Current version: 1.4.0-preview
 | Range proofs | 8 | Passing |
 | TimeCondition proofs | 8 | Passing |
 | Edge cases | 6 | Passing |
-| Bulletproofs | 10 | Passing |
+| Bulletproofs (secp256k1 core + proofs) | 44 | Passing |
 | SorobanTransactionBuilder | 5 | Passing |
 | SorobanHelper | 7 | Passing |
 | Stellar integration | 4 | Requires config |
@@ -62,38 +62,40 @@ Current version: 1.4.0-preview
 | `SorobanTransactionBuilder` | Stable |
 | `SorobanHelper` | Stable |
 
-## Breaking Changes in 1.4.0
+## Breaking Changes in 2.0.0
 
-1. **Soroban SDK 25**: Contract requires recompilation with new SDK.
-2. **New ZK methods**: Added `verify_zk_*` functions to contract.
-3. **SorobanTransactionBuilder**: New class replaces manual XDR construction.
+1. **`BulletproofsProvider` constructor**: No longer accepts a key parameter (uses real Pedersen commitments, not HMAC).
+2. **Proof format**: Real Bulletproofs binary format (~690 bytes) replaces HMAC-based fake proofs (~64 bytes).
+3. **Soroban contract**: `verify_zk_range_proof` performs structural validation and Fiat-Shamir binding; broken `verify_zk_response` removed.
+4. **Contract redeployment required**: Updated ZK verification functions.
 
 ## Migration Guide
 
-### From 1.3.x to 1.4.0
+### From 1.x to 2.0.0
 
 1. Update NuGet packages:
 ```bash
-dotnet add package ZkpSharp --version 1.4.0
+dotnet add package ZkpSharp --version 2.0.0
 ```
 
-2. Recompile Rust contract with Soroban SDK 25:
+2. Update BulletproofsProvider usage:
+```csharp
+// Old (1.x) -- key parameter removed
+// var zkProvider = new BulletproofsProvider(hmacKey);
+
+// New (2.0.0) -- real Bulletproofs, no key needed
+var zkProvider = new BulletproofsProvider();
+var (proof, commitment) = zkProvider.ProveRange(42, 0, 100);
+bool valid = zkProvider.VerifyRange(proof, commitment, 0, 100);
+```
+
+3. Recompile and redeploy Rust contract:
 ```bash
 cd contracts/stellar
-cargo update
 cargo build --release --target wasm32-unknown-unknown
 ```
 
-3. Redeploy contract to network.
-
-4. (Optional) Use new BulletproofsProvider for true ZK:
-```csharp
-// Old (still works)
-var zkp = new Zkp(new ProofProvider(hmacKey));
-
-// New (true ZK)
-var zkProvider = new BulletproofsProvider();
-```
+4. HMAC-based proofs (`Zkp` class) are unchanged and continue to work.
 
 ## Known Issues
 
@@ -102,14 +104,14 @@ var zkProvider = new BulletproofsProvider();
 
 ## Roadmap
 
-### 1.4.1 (Next)
-- [ ] Add BN254 support alongside BLS12-381
-- [ ] Improve proof serialization efficiency
-- [ ] Add more comprehensive error messages
+### 2.1.0 (Next)
+- [ ] Aggregated range proofs (multiple values in a single proof)
+- [ ] Batch verification (verify N proofs faster than N individual verifications)
+- [ ] Performance optimization (precomputed multiscalar multiplication)
 
-### 1.5.0 (Future)
-- [ ] Add zkSNARK support (Groth16)
-- [ ] Add recursive proof composition
+### 3.0.0 (Future)
+- [ ] Groth16 zkSNARK support
+- [ ] Recursive proof composition
 - [ ] Multi-chain support (Ethereum, Solana)
 
 ## Contributing

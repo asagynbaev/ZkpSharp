@@ -32,20 +32,15 @@ soroban contract deploy \
 ```text
 .
 ├── contracts
-│   ├── hello-world/          # Example hello world contract
-│   │   ├── src/
-│   │   │   ├── lib.rs       # Contract implementation
-│   │   │   └── test.rs      # Contract tests
-│   │   └── Cargo.toml
-│   └── proof-balance/        # ZKP verifier contract (PRODUCTION READY)
+│   └── proof-balance/        # ZKP verifier contract
 │       ├── src/
 │       │   ├── lib.rs       # Main contract implementation
 │       │   │                # - verify_proof: HMAC proof verification
 │       │   │                # - verify_balance_proof: Balance proof with numeric check
 │       │   │                # - verify_batch: Batch verification
-│       │   │                # - verify_zk_range_proof: BLS12-381 ZK range proof
-│       │   │                # - verify_zk_age_proof: ZK age verification
-│       │   │                # - verify_zk_balance_proof: ZK balance verification
+│       │   │                # - verify_zk_range_proof: Bulletproofs structural validation
+│       │   │                # - verify_zk_age_proof: ZK age proof structural validation
+│       │   │                # - verify_zk_balance_proof: ZK balance proof structural validation
 │       │   └── test.rs      # Comprehensive test suite
 │       └── Cargo.toml
 ├── Cargo.toml               # Workspace configuration
@@ -64,7 +59,7 @@ A production-ready smart contract for verifying zero-knowledge proofs on Stellar
 #### Features
 
 - **HMAC-SHA256 verification**: RFC 2104 compliant, constant-time comparison
-- **BLS12-381 ZK verification**: True zero-knowledge range, age, and balance proofs
+- **Bulletproofs structural verification**: Validates secp256k1 compressed points, IPA length, and Fiat-Shamir transcript binding for range, age, and balance proofs
 - **Batch verification**: Multiple proofs in a single invocation
 - **Numeric balance comparison**: Proper decimal parsing, not byte-length comparison
 
@@ -99,7 +94,7 @@ pub fn verify_batch(
     hmac_key: BytesN<32>,
 ) -> bool
 
-// BLS12-381 ZK range proof verification
+// Bulletproofs structural validation (NOT full EC verification)
 pub fn verify_zk_range_proof(
     env: Env,
     proof: Bytes,
@@ -140,12 +135,6 @@ The contract is optimized for gas efficiency:
 - Efficient cryptographic operations
 - Batch processing support
 - Optimized XDR encoding/decoding
-
-### Hello World Contract (hello-world)
-
-Status: Example
-
-A simple example contract demonstrating basic Soroban functionality.
 
 ## Testing
 
@@ -307,7 +296,7 @@ Contributions are welcome! Please:
 
 - [x] HMAC-SHA256 proof verification
 - [x] Batch verification
-- [x] BLS12-381 ZK range/age/balance verification
+- [x] Bulletproofs structural verification with Fiat-Shamir transcript binding (secp256k1)
 - [x] Numeric balance comparison
 - [x] Comprehensive tests
 - [x] Production deployment guide

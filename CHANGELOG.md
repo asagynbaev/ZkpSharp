@@ -1,26 +1,35 @@
 # Changelog
 
-## [1.4.0] - 2026-03-03
+## [2.0.0] - 2026-03-03
 
-### Major Release: True Zero-Knowledge Proofs & Soroban SDK 25
+### Major Release: Real Bulletproofs from Scratch in Pure C#
 
-This release introduces true Zero-Knowledge Proofs using Bulletproofs and updates to Soroban SDK 25 with BLS12-381 support.
+This release replaces the previous wrapper-based ZKP implementation with a cryptographically sound Bulletproofs protocol implemented entirely from scratch in managed C#. No external cryptographic library dependencies.
 
 ### Added
 
-#### True Zero-Knowledge Proofs (Bulletproofs)
-- **`IZkProofProvider` interface** - Abstraction for ZK proof providers
-- **`BulletproofsProvider` class** - Full Bulletproofs implementation using Secp256k1.ZKP
-  - `ProveRange()` / `VerifyRange()` - ZK range proofs with Pedersen commitments
-  - `ProveAge()` / `VerifyAge()` - ZK age proofs without revealing exact age
-  - `ProveBalance()` / `VerifyBalance()` - ZK balance proofs
-  - `SerializeProof()` / `DeserializeProof()` - Compact serialization
+#### Bulletproofs Cryptographic Core (all new, from scratch)
+- **`FieldElement`** - Finite field arithmetic (mod p) for secp256k1
+- **`Scalar`** - Scalar arithmetic (mod n) for secp256k1 curve order
+- **`Point`** - Elliptic curve point operations using Jacobian coordinates (add, double, scalar multiply, SEC1 compress/decompress)
+- **`Generators`** - Standard generator G, hash-to-curve derived H, and vector generators Gi/Hi for inner product arguments
+- **`PedersenCommitment`** - Real Pedersen commitments: `C = v*G + r*H` on secp256k1
+- **`Transcript`** - Fiat-Shamir heuristic via SHA-256 for non-interactive proof generation
+- **`InnerProductProof`** - Recursive halving protocol for O(log n) proof size
+- **`RangeProof`** - Full Bulletproofs range proof prover and verifier (64-bit range, ~690 byte proofs)
+
+#### BulletproofsProvider (rewritten)
+- `ProveRange()` / `VerifyRange()` - ZK range proofs backed by real Pedersen commitments
+- `ProveAge()` / `VerifyAge()` - ZK age proofs without revealing birthdate
+- `ProveBalance()` / `VerifyBalance()` - ZK balance sufficiency proofs
+- `SerializeProof()` / `DeserializeProof()` - Compact Base64 serialization
+- Implements `IZkProofProvider` interface (drop-in replacement)
 
 #### Rust Contract Enhancements
-- **`verify_zk_range_proof()`** - BLS12-381 based ZK range verification
-- **`verify_zk_age_proof()`** - On-chain ZK age verification
-- **`verify_zk_balance_proof()`** - On-chain ZK balance verification
-- **Fiat-Shamir challenge computation** - Non-interactive ZK verification
+- **`verify_zk_range_proof()`** - Structural validation of Bulletproofs: compressed point prefixes, IPA length, Fiat-Shamir transcript binding
+- **`compute_transcript_binding()`** - Recomputes SHA-256 hash of domain separator, commitment V, range bounds, and proof points A/S to prevent replay and substitution attacks
+- **`verify_zk_age_proof()`** - On-chain ZK age proof structural verification
+- **`verify_zk_balance_proof()`** - On-chain ZK balance proof structural verification
 - Extended error codes: `InvalidCommitment`, `InvalidRange`
 
 #### Stellar Integration
@@ -37,27 +46,34 @@ This release introduces true Zero-Knowledge Proofs using Bulletproofs and update
 - **StrKey utilities** - Contract ID decoding
 
 #### Test Coverage
-- 10 new Bulletproofs tests
+- 44 new cryptographic tests (secp256k1 arithmetic, Pedersen commitments, range proofs, soundness, serialization round-trips)
+- 10 new Bulletproofs integration tests
 - 5 new SorobanTransactionBuilder tests
 - 27 new core ZKP tests (Membership, Range, TimeCondition, edge cases)
 - 4 new integration tests for ZK on-chain verification
+- Total: 108 tests passing
 
 #### Documentation
-- **`STELLAR_REALITY_CHECK.md`** - Honest assessment of capabilities
+- **`STELLAR_REALITY_CHECK.md`** - Honest assessment of capabilities and on-chain limitations
 - **`INTEGRATION_STATUS.md`** - Current feature and API status
-- Updated README with Bulletproofs examples
+- Updated README with Bulletproofs architecture and cryptography details
+- Updated QUICKSTART with real ZKP usage examples
 
 ### Changed
-- **Soroban SDK**: 22 → 25 (enables BLS12-381 cryptography)
-- **Contract architecture**: Added ZK verification alongside HMAC
-- **StellarBlockchain**: Now implements InvokeHostFunctionOp instead of throwing NotImplementedException
+- **Bulletproofs**: Replaced Secp256k1.ZKP wrapper with from-scratch implementation (FieldElement, Scalar, Point, Generators, Transcript, InnerProductProof, RangeProof)
+- **BulletproofsProvider**: No longer requires a key parameter; uses real Pedersen commitments instead of HMAC-based fake commitments
+- **Soroban contract**: Removed broken `verify_zk_response` function; `verify_zk_range_proof` now performs structural validation and Fiat-Shamir binding instead of fake "BP" header checks
+- **On-chain verification model**: Full EC verification runs off-chain; contract performs structural validation and emits transcript binding hash for off-chain auditing (secp256k1 is not natively supported in Soroban)
 
-### Dependencies
-- `soroban-sdk`: 22 → 25
+### Removed
+- Fake "BP" header-based proof validation in Rust contract
+- Broken `verify_zk_response` function from Rust contract
 
 ### Breaking Changes
-- Rust contract requires recompilation with Soroban SDK 25
-- Contract deployment required for new ZK functions
+- `BulletproofsProvider` constructor no longer accepts a key parameter
+- Proof format changed (real Bulletproofs binary format, not HMAC hashes)
+- Rust contract requires redeployment for updated ZK verification functions
+- Proof sizes increased (~690 bytes vs ~64 bytes) due to real cryptographic content
 
 ---
 

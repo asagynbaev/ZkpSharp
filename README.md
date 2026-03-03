@@ -15,16 +15,18 @@ A .NET library for Zero-Knowledge Proofs with Stellar Soroban blockchain integra
 - Proof of Age, Balance, Membership, Range, Time Condition
 - HMAC-SHA256 with cryptographic salt
 
-**True zero-knowledge proofs** (Bulletproofs) -- mathematically sound:
+**True zero-knowledge proofs** (Bulletproofs on secp256k1) -- mathematically sound:
 
-- ZK range, age, and balance proofs using Pedersen commitments
-- Compact serialization for storage and transmission
+- Real Pedersen commitments: `C = v*G + r*H` on the secp256k1 curve
+- Inner product argument for O(log n) proof size (~690 bytes for 64-bit range)
+- Fiat-Shamir transcript for non-interactive proofs
+- Implemented from scratch in pure C# -- zero external crypto dependencies
 
 **Stellar blockchain integration**:
 
-- Soroban SDK 25 with BLS12-381 cryptography
-- On-chain verification via `InvokeHostFunctionOp`
+- Soroban smart contract: full HMAC verification on-chain, structural validation for Bulletproofs
 - `SorobanTransactionBuilder` for XDR construction
+- `StellarBlockchain` high-level API for both HMAC and ZK on-chain flows
 
 ## Installation
 
@@ -98,6 +100,16 @@ All `Prove*` methods return `(string Proof, string Salt)`. Salts are generated a
 
 ### `StellarBlockchain` -- On-chain verification
 
+| Method | Description |
+|--------|-------------|
+| `VerifyProof(contractId, proof, salt, value)` | HMAC proof on-chain verification |
+| `VerifyBalanceProof(contractId, proof, balance, required, salt)` | HMAC balance proof on-chain |
+| `VerifyZkRangeProof(contractId, proof, commitment, min, max)` | Bulletproofs range proof on-chain |
+| `VerifyZkAgeProof(contractId, proof, commitment, minAge)` | Bulletproofs age proof on-chain |
+| `VerifyZkBalanceProof(contractId, proof, commitment, requiredAmount)` | Bulletproofs balance proof on-chain |
+| `VerifyProofWithTransactionXdrAsync(xdr)` | Verify using pre-built XDR |
+| `GetAccountBalance(accountId)` | Get XLM balance for an account |
+
 ```csharp
 var blockchain = new StellarBlockchain(
     serverUrl: "https://horizon-testnet.stellar.org",
@@ -105,7 +117,21 @@ var blockchain = new StellarBlockchain(
     hmacKey: hmacKey
 );
 
+// HMAC proof on-chain verification
 bool result = await blockchain.VerifyBalanceProof(contractId, proof, balance, required, salt);
+
+// Bulletproofs ZK on-chain verification
+var zkp = new BulletproofsProvider();
+var (zkProof, commitment) = zkp.ProveRange(42, 0, 100);
+bool zkResult = await blockchain.VerifyZkRangeProof(contractId, zkProof, commitment, 0, 100);
+
+// ZK age verification on-chain
+var (ageProof, ageCmt) = zkp.ProveAge(new DateTime(1990, 5, 15), minAge: 18);
+bool ageResult = await blockchain.VerifyZkAgeProof(contractId, ageProof, ageCmt, 18);
+
+// ZK balance verification on-chain
+var (balProof, balCmt) = zkp.ProveBalance(10000, 5000);
+bool balResult = await blockchain.VerifyZkBalanceProof(contractId, balProof, balCmt, 5000);
 ```
 
 ### `SorobanTransactionBuilder` -- Manual transaction construction
@@ -131,9 +157,9 @@ The Rust smart contract (`contracts/stellar/contracts/proof-balance/`) exposes t
 | `verify_proof` | HMAC-SHA256 proof verification |
 | `verify_balance_proof` | Balance proof with numeric comparison |
 | `verify_batch` | Batch verification of multiple proofs |
-| `verify_zk_range_proof` | BLS12-381 ZK range verification |
-| `verify_zk_age_proof` | ZK age verification |
-| `verify_zk_balance_proof` | ZK balance verification |
+| `verify_zk_range_proof` | Bulletproofs structural validation (full EC verification off-chain) |
+| `verify_zk_age_proof` | ZK age proof structural validation |
+| `verify_zk_balance_proof` | ZK balance proof structural validation |
 
 See [contracts/stellar/README.md](contracts/stellar/README.md) for contract details and [contracts/stellar/DEPLOYMENT.md](contracts/stellar/DEPLOYMENT.md) for deployment instructions.
 
@@ -142,20 +168,36 @@ See [contracts/stellar/README.md](contracts/stellar/README.md) for contract deta
 ```
 Application
   |
-  +-- Zkp (HMAC proofs)
-  +-- BulletproofsProvider (ZK proofs)
+  +-- Zkp (HMAC-SHA256 commitment proofs)
+  +-- BulletproofsProvider (real ZKP)
+  |     +-- RangeProof (Bulletproofs prover/verifier)
+  |     +-- PedersenCommitment (v*G + r*H on secp256k1)
+  |     +-- InnerProductProof (recursive halving)
+  |     +-- Transcript (Fiat-Shamir heuristic)
+  |     +-- Point / Scalar / FieldElement (secp256k1 math)
   |
   +-- StellarBlockchain
         +-- SorobanTransactionBuilder --> XDR
         +-- SorobanRpcClient --> Soroban RPC --> ZkpVerifier Contract
 ```
 
+## Cryptography
+
+The Bulletproofs implementation is built from scratch in pure C#:
+
+- **Elliptic curve**: secp256k1 (same curve as Bitcoin) with Jacobian coordinate arithmetic
+- **Commitment scheme**: Pedersen commitments `C = v*G + r*H` where G is the standard generator and H is derived via hash-to-curve
+- **Range proof**: Bulletproofs protocol with logarithmic proof size (O(log n) inner product argument)
+- **Non-interactive**: Fiat-Shamir heuristic via SHA-256 transcript
+- **No unsafe dependencies**: All field/scalar/point operations implemented in managed C# using `System.Numerics.BigInteger`
+
 ## Security
 
 - **Key management**: Use environment variables for development. Use Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault in production.
 - **Salts**: Never reuse. ZkpSharp generates cryptographically secure random salts automatically.
+- **Bulletproofs blinding**: Each proof uses a fresh random blinding factor `r`, making commitments computationally hiding.
 - **Contract verification**: Always verify deployed contract code matches source.
-- **Transaction fees**: Soroban transactions require XLM.
+- **On-chain limitations**: Full Bulletproofs verification (secp256k1 EC math) runs off-chain via `BulletproofsProvider.VerifyRange()`. The Soroban contract performs structural validation only (point prefix checks, IPA length) and emits a transcript binding hash for off-chain auditing. HMAC proofs are fully verified on-chain.
 
 ## Documentation
 
@@ -166,6 +208,36 @@ Application
 | [STELLAR_REALITY_CHECK.md](STELLAR_REALITY_CHECK.md) | Capabilities and limitations |
 | [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) | Feature status and migration guide |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+## FAQ
+
+**Why aren't Bulletproofs fully verified on-chain?**
+
+Soroban provides native support for BLS12-381 curve operations, but the Bulletproofs protocol is defined over secp256k1. Implementing full secp256k1 point arithmetic inside a Soroban contract would exceed compute budgets and add significant complexity with no upstream support. Our contract performs structural validation (compressed point format, IPA length, range bounds) and emits a transcript binding hash as an on-chain anchor. Full cryptographic verification runs off-chain via `BulletproofsProvider.VerifyRange()`. This is a platform limitation, not a design shortcut.
+
+**Why implement Bulletproofs from scratch instead of using an existing library?**
+
+The .NET ecosystem has no mature, maintained Bulletproofs library. Existing options are either abandoned, incomplete, or rely on unsafe native interop. We implemented the protocol from first principles using standard, well-documented primitives: secp256k1 curve parameters (same as Bitcoin), SHA-256 for Fiat-Shamir, and `System.Numerics.BigInteger` for field arithmetic. The implementation is covered by 44 cryptographic tests including soundness checks (tampered proofs, out-of-range values, serialization round-trips).
+
+**Why Bulletproofs and not Groth16 / zkSNARKs?**
+
+Bulletproofs are ideal for range proofs: they require no trusted setup ceremony, produce compact proofs (~690 bytes for a 64-bit range), and rely on standard discrete-log assumptions. zkSNARKs (Groth16) require a per-circuit trusted setup and are better suited for general-purpose computation proofs. Groth16 support is on the roadmap for future releases.
+
+**Is this production-ready?**
+
+The cryptographic core is functionally complete and covered by tests, but it has not undergone an independent security audit. For testnet deployments, PoCs, and non-financial applications, the library is ready to use. For production systems handling real value, we recommend a third-party cryptographic audit before deployment. The HMAC-based proof system (which does not involve custom cryptography) is suitable for production use as-is.
+
+**How does this compare to HMAC-based proofs?**
+
+| | HMAC proofs | Bulletproofs |
+|---|---|---|
+| Zero-knowledge | No (commitment scheme) | Yes (mathematically proven) |
+| Verifier learns | Nothing if key is secret | Nothing about the secret value |
+| Security basis | HMAC key secrecy | Discrete logarithm hardness |
+| Proof size | 32 bytes | ~690 bytes |
+| Speed | < 1 ms | ~200-500 ms (prove), ~50 ms (verify) |
+| On-chain verification | Full (HMAC recomputation) | Structural only (full EC off-chain) |
+| Best for | Fast checks, internal systems | Regulatory compliance, trustless scenarios |
 
 ## Contributing
 

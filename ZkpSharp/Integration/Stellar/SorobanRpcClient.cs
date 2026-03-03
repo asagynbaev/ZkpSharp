@@ -2,9 +2,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StellarDotnetSdk;
-using StellarDotnetSdk.Accounts;
-using StellarDotnetSdk.Transactions;
-using StellarDotnetSdk.Responses;
 
 namespace ZkpSharp.Integration.Stellar
 {
@@ -33,33 +30,6 @@ namespace ZkpSharp.Integration.Stellar
             // Use Horizon server if provided, otherwise try to infer from RPC URL
             horizonUrl ??= rpcUrl.Replace("soroban", "horizon").Replace("/rpc", "");
             _server = new Server(horizonUrl);
-        }
-
-        /// <summary>
-        /// Invokes a contract method using Soroban RPC API.
-        /// </summary>
-        /// <param name="contractId">The contract ID (address) to invoke.</param>
-        /// <param name="functionName">The name of the function to call.</param>
-        /// <param name="arguments">The arguments to pass to the function as byte arrays.</param>
-        /// <returns>The result of the contract invocation.</returns>
-        public Task<bool> InvokeContractAsync(string contractId, string functionName, params byte[][] arguments)
-        {
-            if (string.IsNullOrEmpty(contractId))
-            {
-                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
-            }
-
-            if (string.IsNullOrEmpty(functionName))
-            {
-                throw new ArgumentException("Function name cannot be null or empty.", nameof(functionName));
-            }
-
-            // For now, use a simplified approach that requires the transaction XDR to be provided
-            // In production, you should build the transaction properly using XDR encoding
-            throw new NotImplementedException(
-                "Direct contract invocation requires proper Soroban transaction XDR encoding. " +
-                "Use InvokeContractWithTransactionXdrAsync method with a pre-built transaction XDR, " +
-                "or implement proper XDR encoding using Soroban SDK.");
         }
 
         /// <summary>
@@ -97,42 +67,6 @@ namespace ZkpSharp.Integration.Stellar
             catch (HttpRequestException ex)
             {
                 throw new InvalidOperationException($"Failed to communicate with Soroban RPC: {ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// Builds a transaction for invoking a Soroban contract method.
-        /// Note: This is a simplified implementation that creates a basic transaction structure.
-        /// For production use with Soroban contracts, you should use a Soroban-specific SDK
-        /// or properly build XDR transactions with InvokeHostFunctionOp.
-        /// </summary>
-        private async Task<string> BuildInvokeTransactionAsync(
-            string sourceAccountId,
-            string contractId,
-            string functionName,
-            byte[][] arguments)
-        {
-            try
-            {
-                var sourceAccount = await _server.Accounts.Account(sourceAccountId);
-
-                // Create a basic transaction
-                // Note: For actual Soroban invocation, you need to create a transaction
-                // with InvokeHostFunctionOp operation, which requires proper XDR encoding
-                var transactionBuilder = new TransactionBuilder(sourceAccount);
-                var transaction = transactionBuilder.Build();
-
-                // For now, we'll create a placeholder XDR
-                // In production, this should be a proper Soroban transaction with InvokeHostFunctionOp
-                // This requires using XDR encoding libraries or Soroban-specific SDK
-                throw new NotImplementedException(
-                    "Proper Soroban transaction building requires XDR encoding. " +
-                    "Consider using a Soroban-specific SDK or XDR encoding library. " +
-                    "For testing, you can manually create the transaction XDR.");
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Failed to build transaction: {ex.Message}", ex);
             }
         }
 
@@ -271,36 +205,9 @@ namespace ZkpSharp.Integration.Stellar
             {
                 throw new InvalidOperationException($"Invalid XDR format: {ex.Message}", ex);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Warning: Failed to decode XDR (using fallback): {ex.Message}");
-                return false;
-            }
-        }
-
-        private byte[] ConvertContractIdToBytes(string contractId)
-        {
-            // Remove common prefixes
-            contractId = contractId.Replace("0x", "").Replace("C", "").Trim();
-
-            // If it's a hex string, convert it
-            if (contractId.All(c => (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')))
-            {
-                return Enumerable.Range(0, contractId.Length)
-                    .Where(x => x % 2 == 0)
-                    .Select(x => Convert.ToByte(contractId.Substring(x, 2), 16))
-                    .ToArray();
-            }
-
-            // Otherwise, treat as base64
-            try
-            {
-                return Convert.FromBase64String(contractId);
-            }
             catch
             {
-                // Fallback: use UTF-8 encoding
-                return Encoding.UTF8.GetBytes(contractId);
+                return false;
             }
         }
 

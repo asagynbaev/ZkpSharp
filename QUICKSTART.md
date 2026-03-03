@@ -93,7 +93,7 @@ bool isValid = zkp.VerifyTimeCondition(proof, eventDate, cutoff, salt);
 
 ## 4. True Zero-Knowledge Proofs (Bulletproofs)
 
-For scenarios requiring mathematically sound ZK proofs where no information about the secret value is leaked:
+ZkpSharp includes a full Bulletproofs implementation built from scratch in pure C# on the secp256k1 curve. Unlike the HMAC-based proofs above, Bulletproofs provide real zero-knowledge: the verifier learns nothing about the secret value beyond the stated claim. Proofs use Pedersen commitments (`C = v*G + r*H`), an inner product argument for O(log n) size, and a Fiat-Shamir transcript for non-interactivity.
 
 ```csharp
 using ZkpSharp.Security;
@@ -130,7 +130,7 @@ cd contracts/stellar
 rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown --release --package proof-balance
 
-stellar contract deploy \
+soroban contract deploy \
   --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
   --source <YOUR_SECRET_KEY> \
   --network testnet
@@ -145,7 +145,7 @@ export ZKP_HMAC_KEY="your-base64-encoded-key"
 export ZKP_CONTRACT_ID="CABC..."
 ```
 
-### Verify proofs on-chain
+### Verify HMAC proofs on-chain
 
 ```csharp
 using ZkpSharp.Core;
@@ -163,14 +163,49 @@ var blockchain = new StellarBlockchain(
     hmacKey: hmacKey
 );
 
-// Generate proof off-chain, verify on-chain
 var (proof, salt) = zkp.ProveBalance(1000.0, 500.0);
 bool verified = await blockchain.VerifyBalanceProof(
     contractId, proof, 1000.0, 500.0, salt
 );
 ```
 
-### Build transactions manually
+### Verify Bulletproofs ZK proofs on-chain
+
+```csharp
+using ZkpSharp.Security;
+using ZkpSharp.Integration.Stellar;
+
+var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID")!;
+
+var blockchain = new StellarBlockchain(
+    "https://horizon-testnet.stellar.org",
+    "https://soroban-testnet.stellar.org"
+);
+
+var zkp = new BulletproofsProvider();
+
+// Generate ZK proof off-chain
+var (proof, commitment) = zkp.ProveRange(42, 0, 100);
+
+// Verify on-chain (structural validation + Fiat-Shamir binding)
+bool verified = await blockchain.VerifyZkRangeProof(
+    contractId, proof, commitment, 0, 100
+);
+
+// Age proof: prove age >= 18 and verify on-chain
+var (ageProof, ageCmt) = zkp.ProveAge(new DateTime(1990, 5, 15), minAge: 18);
+bool ageVerified = await blockchain.VerifyZkAgeProof(
+    contractId, ageProof, ageCmt, 18
+);
+
+// Balance proof: prove balance >= 5000 and verify on-chain
+var (balProof, balCmt) = zkp.ProveBalance(10000, 5000);
+bool balVerified = await blockchain.VerifyZkBalanceProof(
+    contractId, balProof, balCmt, 5000
+);
+```
+
+### Build transactions manually (advanced)
 
 ```csharp
 using StellarDotnetSdk;
@@ -178,16 +213,21 @@ using ZkpSharp.Integration.Stellar;
 
 var builder = new SorobanTransactionBuilder(Network.Test());
 
+// HMAC proof transaction
 string xdr = builder.BuildVerifyProofTransaction(
-    contractId: contractId,
-    proof: proof,
-    data: "data-to-verify",
-    salt: salt,
-    hmacKey: hmacKey
+    contractId, proof, "data-to-verify", salt, hmacKey
+);
+
+// ZK range proof transaction
+string zkXdr = builder.BuildVerifyZkRangeProofTransaction(
+    contractId,
+    Convert.ToBase64String(zkProof),
+    Convert.ToBase64String(commitment),
+    min: 0, max: 100
 );
 
 var rpcClient = new SorobanRpcClient("https://soroban-testnet.stellar.org");
-bool result = await rpcClient.InvokeContractWithTransactionXdrAsync(xdr);
+bool result = await rpcClient.InvokeContractWithTransactionXdrAsync(zkXdr);
 ```
 
 ## Next steps
