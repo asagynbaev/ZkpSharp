@@ -3,6 +3,9 @@
 A .NET library for Zero-Knowledge Proofs with Stellar Soroban blockchain integration. Prove facts about private data (age, balance, membership, range, time conditions) without revealing the data itself.
 
 [![NuGet](https://img.shields.io/nuget/v/ZkpSharp)](https://www.nuget.org/packages/ZkpSharp)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ZkpSharp)](https://www.nuget.org/packages/ZkpSharp)
+[![Build](https://github.com/asagynbaev/ZkpSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/asagynbaev/ZkpSharp/actions/workflows/dotnet.yml)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Features
