@@ -8,48 +8,48 @@ Current version: 1.4.0-preview
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| `Zkp` (HMAC-based proofs) | ✅ Complete | Age, Balance, Membership, Range, TimeCondition |
-| `BulletproofsProvider` | ✅ Complete | True ZK Range/Age/Balance proofs |
-| `IZkProofProvider` interface | ✅ Complete | Abstraction for ZK providers |
-| `ProofProvider` | ✅ Complete | HMAC-SHA256 implementation |
-| `StellarBlockchain` | ✅ Complete | Horizon + Soroban RPC integration |
-| `SorobanTransactionBuilder` | ✅ Complete | XDR construction for all proof types |
-| `SorobanHelper` | ✅ Complete | SCVal encoding/decoding |
-| `SorobanRpcClient` | ✅ Complete | JSON-RPC client for Soroban |
+| `Zkp` (HMAC-based proofs) | Complete | Age, Balance, Membership, Range, TimeCondition |
+| `BulletproofsProvider` | Complete | True ZK Range/Age/Balance proofs |
+| `IZkProofProvider` interface | Complete | Abstraction for ZK providers |
+| `ProofProvider` | Complete | HMAC-SHA256 implementation |
+| `StellarBlockchain` | Complete | Horizon + Soroban RPC integration |
+| `SorobanTransactionBuilder` | Complete | XDR construction for all proof types |
+| `SorobanHelper` | Complete | SCVal encoding/decoding |
+| `SorobanRpcClient` | Complete | JSON-RPC client for Soroban |
 
 ### Rust Soroban Contract
 
 | Function | Status | Notes |
 |----------|--------|-------|
-| `verify_proof` | ✅ Complete | HMAC-SHA256 verification |
-| `verify_balance_proof` | ✅ Complete | With numeric comparison |
-| `verify_batch` | ✅ Complete | Multiple proofs at once |
-| `verify_zk_range_proof` | ✅ Complete | BLS12-381 based |
-| `verify_zk_age_proof` | ✅ Complete | Range proof wrapper |
-| `verify_zk_balance_proof` | ✅ Complete | Range proof wrapper |
+| `verify_proof` | Complete | HMAC-SHA256 verification |
+| `verify_balance_proof` | Complete | With numeric comparison |
+| `verify_batch` | Complete | Multiple proofs at once |
+| `verify_zk_range_proof` | Complete | BLS12-381 based |
+| `verify_zk_age_proof` | Complete | Range proof wrapper |
+| `verify_zk_balance_proof` | Complete | Range proof wrapper |
 
 ### Dependencies
 
 | Package | Version | Status |
 |---------|---------|--------|
-| `stellar-dotnet-sdk` | 14.0.1 | ✅ Latest |
-| `stellar-dotnet-sdk-xdr` | 14.0.1 | ✅ Latest |
-| `soroban-sdk` (Rust) | 25 | ✅ Latest |
+| `stellar-dotnet-sdk` | 14.0.1 | Latest |
+| `stellar-dotnet-sdk-xdr` | 14.0.1 | Latest |
+| `soroban-sdk` (Rust) | 25 | Latest |
 
 ### Test Coverage
 
 | Test Category | Count | Status |
 |---------------|-------|--------|
-| Age proofs | 6 | ✅ Passing |
-| Balance proofs | 4 | ✅ Passing |
-| Membership proofs | 6 | ✅ Passing |
-| Range proofs | 8 | ✅ Passing |
-| TimeCondition proofs | 8 | ✅ Passing |
-| Edge cases | 6 | ✅ Passing |
-| Bulletproofs | 10 | ✅ Passing |
-| SorobanTransactionBuilder | 5 | ✅ Passing |
-| SorobanHelper | 7 | ✅ Passing |
-| Stellar integration | 4 | ⚠️ Requires config |
+| Age proofs | 6 | Passing |
+| Balance proofs | 4 | Passing |
+| Membership proofs | 6 | Passing |
+| Range proofs | 8 | Passing |
+| TimeCondition proofs | 8 | Passing |
+| Edge cases | 6 | Passing |
+| Bulletproofs | 10 | Passing |
+| SorobanTransactionBuilder | 5 | Passing |
+| SorobanHelper | 7 | Passing |
+| Stellar integration | 4 | Requires config |
 
 ## API Stability
 
@@ -114,7 +114,7 @@ var zkProvider = new BulletproofsProvider();
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See the [Contributing](README.md#contributing) section in the README.
 
 ## Support
 

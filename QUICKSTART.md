@@ -1,344 +1,198 @@
-# ZkpSharp + Stellar: Quick Start Guide
+# ZkpSharp Quick Start
 
-Get up and running with ZkpSharp on Stellar in 5 minutes.
+Get up and running with ZkpSharp in 5 minutes.
 
 ## Prerequisites
 
-- .NET 8.0 SDK
-- Rust toolchain
-- Soroban CLI
-- Stellar testnet account
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
+- (Optional) [Rust toolchain](https://rustup.rs/) and [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/stellar-cli) for on-chain verification
 
-## Step-by-Step Guide
-
-### 1. Clone and Setup
+## 1. Install the package
 
 ```bash
-git clone https://github.com/asagynbaev/ZkpSharp.git
-cd ZkpSharp
-
-# Install .NET dependencies
-dotnet restore
-
-# Setup Rust and Soroban
-cd contracts/stellar
-make setup
+dotnet add package ZkpSharp
 ```
 
-### 2. Generate HMAC Key
+## 2. Generate an HMAC key
+
+The library requires a 32-byte Base64-encoded key for HMAC-SHA256 operations.
+
+Using OpenSSL:
 
 ```bash
-# Generate a secure 32-byte key
 openssl rand -base64 32
-
-# Output example:
-# V0V3Mv4D1USxZYwWL4eG93m0JKdO9KbXQn0mhg+EXHc=
-
-# Save this key!
-export ZKP_HMAC_KEY="YOUR_GENERATED_KEY"
 ```
 
-### 3. Setup Stellar Testnet Account
-
-```bash
-# Install Soroban CLI (if not done in step 1)
-cargo install --locked soroban-cli --features opt
-
-# Configure testnet
-soroban network add \
-  --global testnet \
-  --rpc-url https://soroban-testnet.stellar.org \
-  --network-passphrase "Test SDF Network ; September 2015"
-
-# Generate account
-soroban keys generate --global alice --network testnet
-
-# Fund account from friendbot
-soroban keys fund alice --network testnet
-
-# Or use Makefile
-make fund-testnet ACCOUNT=alice
-```
-
-### 4. Build and Deploy Contract
-
-```bash
-# Navigate to contracts
-cd contracts/stellar
-
-# Build, optimize and deploy in one command
-make deploy-testnet SOURCE_ACCOUNT=alice
-
-# Output will show your contract ID:
-# ✅ Contract deployed!
-# 📝 Contract ID: CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-# 
-# 💾 Save this contract ID:
-# export ZKP_CONTRACT_ID=CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-# Save the contract ID
-export ZKP_CONTRACT_ID="YOUR_CONTRACT_ID"
-```
-
-### 5. Run Example Application
-
-Create a file `Program.cs`:
+Or in C#:
 
 ```csharp
-using System;
+using System.Security.Cryptography;
+
+var key = new byte[32];
+RandomNumberGenerator.Fill(key);
+string hmacKey = Convert.ToBase64String(key);
+```
+
+Store this key securely. You will need it for both generating and verifying proofs.
+
+## 3. Basic usage
+
+```csharp
+using ZkpSharp.Core;
+using ZkpSharp.Security;
+
+var proofProvider = new ProofProvider(hmacKey);
+var zkp = new Zkp(proofProvider);
+```
+
+### Age verification
+
+```csharp
+var dateOfBirth = new DateTime(1995, 3, 15);
+
+var (proof, salt) = zkp.ProveAge(dateOfBirth);
+bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
+// isValid == true (age >= 18)
+```
+
+### Balance verification
+
+```csharp
+double balance = 1000.0;
+double required = 500.0;
+
+var (proof, salt) = zkp.ProveBalance(balance, required);
+bool isValid = zkp.VerifyBalance(proof, required, salt, balance);
+```
+
+### Membership verification
+
+```csharp
+var tiers = new[] { "gold", "silver", "bronze" };
+
+var (proof, salt) = zkp.ProveMembership("gold", tiers);
+bool isValid = zkp.VerifyMembership(proof, "gold", salt, tiers);
+```
+
+### Range verification
+
+```csharp
+var (proof, salt) = zkp.ProveRange(value: 75.0, minValue: 0.0, maxValue: 100.0);
+bool isValid = zkp.VerifyRange(proof, 0.0, 100.0, 75.0, salt);
+```
+
+### Time condition verification
+
+```csharp
+var eventDate = new DateTime(2025, 6, 1);
+var cutoff = new DateTime(2025, 1, 1);
+
+var (proof, salt) = zkp.ProveTimeCondition(eventDate, cutoff);
+bool isValid = zkp.VerifyTimeCondition(proof, eventDate, cutoff, salt);
+```
+
+## 4. True Zero-Knowledge Proofs (Bulletproofs)
+
+For scenarios requiring mathematically sound ZK proofs where no information about the secret value is leaked:
+
+```csharp
+using ZkpSharp.Security;
+using ZkpSharp.Interfaces;
+
+IZkProofProvider zkProvider = new BulletproofsProvider();
+
+// Range proof: prove value is in [0, 100] without revealing it
+var (proof, commitment) = zkProvider.ProveRange(value: 42, min: 0, max: 100);
+bool isValid = zkProvider.VerifyRange(proof, commitment, min: 0, max: 100);
+
+// Age proof: prove age >= 18 without revealing birthdate
+var (ageProof, ageCmt) = zkProvider.ProveAge(new DateTime(1990, 5, 15), minAge: 18);
+bool ageValid = zkProvider.VerifyAge(ageProof, ageCmt, minAge: 18);
+
+// Balance proof: prove balance >= required without revealing amount
+var (balProof, balCmt) = zkProvider.ProveBalance(balance: 10000, requiredAmount: 5000);
+bool balValid = zkProvider.VerifyBalance(balProof, balCmt, requiredAmount: 5000);
+```
+
+Proofs can be serialized for storage or network transmission:
+
+```csharp
+string serialized = zkProvider.SerializeProof(proof, commitment);
+var (deserializedProof, deserializedCommitment) = zkProvider.DeserializeProof(serialized);
+```
+
+## 5. On-chain verification (Stellar)
+
+### Deploy the Soroban contract
+
+```bash
+cd contracts/stellar
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown --release --package proof-balance
+
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
+  --source <YOUR_SECRET_KEY> \
+  --network testnet
+```
+
+Save the contract ID from the output.
+
+### Set environment variables
+
+```bash
+export ZKP_HMAC_KEY="your-base64-encoded-key"
+export ZKP_CONTRACT_ID="CABC..."
+```
+
+### Verify proofs on-chain
+
+```csharp
 using ZkpSharp.Core;
 using ZkpSharp.Security;
 using ZkpSharp.Integration.Stellar;
 
-// Get configuration from environment
-var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
-var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");
+var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY")!;
+var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID")!;
 
-if (string.IsNullOrEmpty(hmacKey) || string.IsNullOrEmpty(contractId))
-{
-    Console.WriteLine("❌ Error: ZKP_HMAC_KEY and ZKP_CONTRACT_ID must be set");
-    return;
-}
+var zkp = new Zkp(new ProofProvider(hmacKey));
 
-Console.WriteLine("🚀 ZkpSharp + Stellar Demo");
-Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-// Initialize ZKP
-var proofProvider = new ProofProvider(hmacKey);
-var zkp = new Zkp(proofProvider);
-
-// Initialize Stellar blockchain
 var blockchain = new StellarBlockchain(
     "https://horizon-testnet.stellar.org",
-    "https://soroban-testnet.stellar.org"
+    "https://soroban-testnet.stellar.org",
+    hmacKey: hmacKey
 );
 
-// Example 1: Balance Proof
-Console.WriteLine("\n📊 Example 1: Balance Proof");
-Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-double balance = 1000.0;
-double requestedAmount = 500.0;
-
-// Generate proof (off-chain)
-var (balanceProof, balanceSalt) = zkp.ProveBalance(balance, requestedAmount);
-Console.WriteLine($"✅ Proof generated: {balanceProof[..20]}...");
-
-// Verify off-chain
-var isValidOffChain = zkp.VerifyBalance(balanceProof, requestedAmount, balanceSalt, balance);
-Console.WriteLine($"✅ Off-chain verification: {isValidOffChain}");
-
-// Verify on-chain (on Stellar)
-Console.WriteLine("🔄 Verifying on Stellar blockchain...");
-var isValidOnChain = await blockchain.VerifyBalanceProof(
-    contractId,
-    balanceProof,
-    balance,
-    requestedAmount,
-    balanceSalt
-);
-Console.WriteLine($"✅ On-chain verification: {isValidOnChain}");
-
-// Example 2: Age Proof
-Console.WriteLine("\n👤 Example 2: Age Proof");
-Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-var dateOfBirth = new DateTime(1990, 1, 1);
-var (ageProof, ageSalt) = zkp.ProveAge(dateOfBirth);
-Console.WriteLine($"✅ Age proof generated: {ageProof[..20]}...");
-
-var ageIsValid = zkp.VerifyAge(ageProof, dateOfBirth, ageSalt);
-Console.WriteLine($"✅ Age verification: {ageIsValid}");
-
-// Example 3: Membership Proof
-Console.WriteLine("\n👥 Example 3: Membership Proof");
-Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-var userId = "user123";
-var validUsers = new[] { "user123", "user456", "user789" };
-var (membershipProof, membershipSalt) = zkp.ProveMembership(userId, validUsers);
-Console.WriteLine($"✅ Membership proof generated: {membershipProof[..20]}...");
-
-var membershipIsValid = zkp.VerifyMembership(membershipProof, userId, membershipSalt, validUsers);
-Console.WriteLine($"✅ Membership verification: {membershipIsValid}");
-
-Console.WriteLine("\n✨ All examples completed successfully!");
-Console.WriteLine($"📝 Contract ID: {contractId}");
-Console.WriteLine($"🌐 Network: Stellar Testnet");
-```
-
-Run the application:
-
-```bash
-# Set environment variables
-export ZKP_HMAC_KEY="your-key-here"
-export ZKP_CONTRACT_ID="your-contract-id-here"
-
-# Run
-dotnet run
-```
-
-## Next Steps
-
-### Learn More
-
-- [Full Documentation](README.md)
-- [Deployment Guide](contracts/stellar/DEPLOYMENT.md)
-- [API Reference](ZkpSharp/Core/ZKP.cs)
-- [Soroban Contract](contracts/stellar/contracts/proof-balance/src/lib.rs)
-
-### Try More Examples
-
-1. **Range Proofs**: Prove a value is within a range
-```csharp
-var (proof, salt) = zkp.ProveRange(75.5, 0, 100);
-var isValid = zkp.VerifyRange(proof, 0, 100, 75.5, salt);
-```
-
-2. **Time Condition Proofs**: Prove an event occurred after a date
-```csharp
-var eventDate = DateTime.UtcNow;
-var conditionDate = DateTime.UtcNow.AddDays(-7);
-var (proof, salt) = zkp.ProveTimeCondition(eventDate, conditionDate);
-var isValid = zkp.VerifyTimeCondition(proof, eventDate, conditionDate, salt);
-```
-
-3. **Batch Verification**: Verify multiple proofs efficiently
-```csharp
-// Generate multiple proofs
-var proofs = new List<(string proof, string salt)>();
-for (int i = 0; i < 5; i++)
-{
-    var (proof, salt) = zkp.ProveBalance(1000 * i, 500);
-    proofs.Add((proof, salt));
-}
-
-// Verify using batch operations on the contract
-// (See contract documentation for batch verification)
-```
-
-### Deploy to Mainnet
-
-⚠️ **Before deploying to mainnet:**
-
-1. ✅ Test thoroughly on testnet
-2. ✅ Have contract audited
-3. ✅ Use secure key management (Azure Key Vault, AWS Secrets Manager)
-4. ✅ Ensure you have sufficient XLM for fees
-5. ✅ Review security best practices
-
-```bash
-# Deploy to mainnet (requires confirmation)
-cd contracts/stellar
-make deploy-mainnet SOURCE_ACCOUNT=production-key
-```
-
-## Troubleshooting
-
-### "Contract ID not configured"
-```bash
-# Make sure you've set the environment variable
-export ZKP_CONTRACT_ID="C..."
-```
-
-### "HMAC key not configured"
-```bash
-# Generate and set the HMAC key
-export ZKP_HMAC_KEY=$(openssl rand -base64 32)
-```
-
-### "Account not found"
-```bash
-# Fund your testnet account
-make fund-testnet ACCOUNT=alice
-# Or manually:
-soroban keys fund alice --network testnet
-```
-
-### Contract deployment fails
-```bash
-# Check you have the wasm32 target
-rustup target add wasm32-unknown-unknown
-
-# Clean and rebuild
-make clean
-make build
-
-# Try deploying again
-make deploy-testnet SOURCE_ACCOUNT=alice
-```
-
-## Tips
-
-1. **Development Workflow**:
-   ```bash
-   # Quick development cycle
-   make dev  # Builds and tests
-   ```
-
-2. **Check Contract Status**:
-   ```bash
-   make verify CONTRACT_ID=C...
-   ```
-
-3. **Keep Dependencies Updated**:
-   ```bash
-   cargo update
-   dotnet update
-   ```
-
-4. **Monitor Gas Costs**:
-   - Single verification: ~1,000-2,000 operations
-   - Batch verification: ~800-1,500 operations per proof
-   - Monitor costs in production and optimize as needed
-
-## Common Use Cases
-
-### DeFi Application
-```csharp
-// Prove sufficient balance for a swap without revealing amount
-var userBalance = 10000.0;
-var swapAmount = 1000.0;
-var (proof, salt) = zkp.ProveBalance(userBalance, swapAmount);
-
-// Verify on-chain
-var canSwap = await blockchain.VerifyBalanceProof(
-    contractId, proof, userBalance, swapAmount, salt
+// Generate proof off-chain, verify on-chain
+var (proof, salt) = zkp.ProveBalance(1000.0, 500.0);
+bool verified = await blockchain.VerifyBalanceProof(
+    contractId, proof, 1000.0, 500.0, salt
 );
 ```
 
-### Age Verification
-```csharp
-// Prove user is over 18 without revealing birthdate
-var dateOfBirth = new DateTime(1995, 5, 15);
-var (proof, salt) = zkp.ProveAge(dateOfBirth);
+### Build transactions manually
 
-// Verify on-chain or off-chain
-var isAdult = zkp.VerifyAge(proof, dateOfBirth, salt);
+```csharp
+using StellarDotnetSdk;
+using ZkpSharp.Integration.Stellar;
+
+var builder = new SorobanTransactionBuilder(Network.Test());
+
+string xdr = builder.BuildVerifyProofTransaction(
+    contractId: contractId,
+    proof: proof,
+    data: "data-to-verify",
+    salt: salt,
+    hmacKey: hmacKey
+);
+
+var rpcClient = new SorobanRpcClient("https://soroban-testnet.stellar.org");
+bool result = await rpcClient.InvokeContractWithTransactionXdrAsync(xdr);
 ```
 
-### Membership Verification
-```csharp
-// Prove membership in a group without revealing identity
-var memberId = "premium-user-12345";
-var validMembers = GetPremiumMembers(); // From database
-var (proof, salt) = zkp.ProveMembership(memberId, validMembers);
+## Next steps
 
-// Verify membership
-var isMember = zkp.VerifyMembership(proof, memberId, salt, validMembers);
-```
-
-## Resources
-
-- [Stellar Developer Portal](https://developers.stellar.org/)
-- [Soroban Docs](https://soroban.stellar.org/)
-- [Stellar Discord](https://discord.gg/stellar)
-- [ZkpSharp GitHub](https://github.com/asagynbaev/ZkpSharp)
-
-## Support
-
-For assistance:
-- Email: sagynbaev6@gmail.com
-- Discord: Stellar Community (https://discord.gg/stellar)
-- Issues: GitHub Issues (https://github.com/asagynbaev/ZkpSharp/issues)
-
+- [README.md](README.md) -- Full API reference and architecture overview
+- [contracts/stellar/DEPLOYMENT.md](contracts/stellar/DEPLOYMENT.md) -- Detailed contract deployment guide
+- [STELLAR_REALITY_CHECK.md](STELLAR_REALITY_CHECK.md) -- Capabilities and limitations
+- [CHANGELOG.md](CHANGELOG.md) -- Version history

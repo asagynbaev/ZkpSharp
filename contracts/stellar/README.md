@@ -40,9 +40,12 @@ soroban contract deploy \
 │   └── proof-balance/        # ZKP verifier contract (PRODUCTION READY)
 │       ├── src/
 │       │   ├── lib.rs       # Main contract implementation
-│       │   │                # - verify_proof: Verify any ZKP
-│       │   │                # - verify_balance_proof: Verify balance proofs
+│       │   │                # - verify_proof: HMAC proof verification
+│       │   │                # - verify_balance_proof: Balance proof with numeric check
 │       │   │                # - verify_batch: Batch verification
+│       │   │                # - verify_zk_range_proof: BLS12-381 ZK range proof
+│       │   │                # - verify_zk_age_proof: ZK age verification
+│       │   │                # - verify_zk_balance_proof: ZK balance verification
 │       │   └── test.rs      # Comprehensive test suite
 │       └── Cargo.toml
 ├── Cargo.toml               # Workspace configuration
@@ -56,29 +59,28 @@ soroban contract deploy \
 
 Status: Production Ready
 
-A production-ready smart contract for verifying zero-knowledge proofs using HMAC-SHA256 cryptography.
+A production-ready smart contract for verifying zero-knowledge proofs on Stellar.
 
 #### Features
 
-- **verify_proof**: Verifies any type of ZKP (age, balance, membership, range, time)
-- **verify_balance_proof**: Specialized balance verification with amount checking
-- **verify_batch**: Efficient batch verification of multiple proofs
-- **Constant-time comparison**: Protection against timing attacks
-- **Full HMAC-SHA256**: RFC 2104 compliant implementation
+- **HMAC-SHA256 verification**: RFC 2104 compliant, constant-time comparison
+- **BLS12-381 ZK verification**: True zero-knowledge range, age, and balance proofs
+- **Batch verification**: Multiple proofs in a single invocation
+- **Numeric balance comparison**: Proper decimal parsing, not byte-length comparison
 
 #### Function Signatures
 
 ```rust
-// Verify a single proof
+// HMAC-SHA256 proof verification
 pub fn verify_proof(
     env: Env,
-    proof: BytesN<32>,        // The HMAC-SHA256 proof
-    data: Bytes,              // Original data that was proven
-    salt: Bytes,              // Cryptographic salt (min 16 bytes)
-    hmac_key: BytesN<32>,     // HMAC secret key
+    proof: BytesN<32>,
+    data: Bytes,
+    salt: Bytes,
+    hmac_key: BytesN<32>,
 ) -> bool
 
-// Verify a balance proof with amount check
+// Balance proof with numeric comparison
 pub fn verify_balance_proof(
     env: Env,
     proof: BytesN<32>,
@@ -95,6 +97,31 @@ pub fn verify_batch(
     data_items: Vec<Bytes>,
     salts: Vec<Bytes>,
     hmac_key: BytesN<32>,
+) -> bool
+
+// BLS12-381 ZK range proof verification
+pub fn verify_zk_range_proof(
+    env: Env,
+    proof: Bytes,
+    commitment: BytesN<33>,
+    min: i64,
+    max: i64,
+) -> bool
+
+// ZK age proof verification
+pub fn verify_zk_age_proof(
+    env: Env,
+    proof: Bytes,
+    commitment: BytesN<33>,
+    min_age: u32,
+) -> bool
+
+// ZK balance proof verification
+pub fn verify_zk_balance_proof(
+    env: Env,
+    proof: Bytes,
+    commitment: BytesN<33>,
+    required_amount: i64,
 ) -> bool
 ```
 
@@ -154,7 +181,7 @@ Test coverage includes:
 ### proof-balance Contract
 
 - **WASM Size**: ~15-20 KB (optimized)
-- **Functions**: 3 public, 2 internal helpers
+- **Functions**: 6 public, 4 internal helpers
 - **Test Coverage**: 95%+
 - **Gas Cost** (estimated):
   - Single verification: ~1,000-2,000 operations
@@ -278,12 +305,12 @@ Contributions are welcome! Please:
 
 ## Roadmap
 
-- [x] Basic proof verification
-- [x] HMAC-SHA256 implementation
+- [x] HMAC-SHA256 proof verification
 - [x] Batch verification
+- [x] BLS12-381 ZK range/age/balance verification
+- [x] Numeric balance comparison
 - [x] Comprehensive tests
 - [x] Production deployment guide
 - [ ] Gas optimization analysis
-- [ ] Additional proof types (range, membership)
 - [ ] Multi-key verification support
 - [ ] Upgradeable contract pattern

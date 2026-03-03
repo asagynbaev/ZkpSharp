@@ -1,419 +1,180 @@
 # ZkpSharp
 
-**ZkpSharp** is a production-ready .NET library for implementing Zero-Knowledge Proofs (ZKP) with full Stellar Soroban blockchain integration. This library allows you to securely prove certain information (such as age or balance) without revealing the actual data.
+A .NET library for Zero-Knowledge Proofs with Stellar Soroban blockchain integration. Prove facts about private data (age, balance, membership, range, time conditions) without revealing the data itself.
+
+[![NuGet](https://img.shields.io/nuget/v/ZkpSharp)](https://www.nuget.org/packages/ZkpSharp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Features
 
-### Privacy Proofs (HMAC-based Commitment Schemes)
-Fast, lightweight proofs for basic privacy needs:
+**Privacy proofs** (HMAC-based commitment schemes) -- fast, lightweight:
 
-- **Proof of Age**: Prove that your age is above a certain threshold without revealing your actual birthdate.
-- **Proof of Balance**: Prove that you have sufficient balance to make a transaction without revealing your full balance.
-- **Proof of Membership**: Prove that a given value belongs to a set of valid values.
-- **Proof of Range**: Prove that a value lies within a specified range without revealing the exact value.
-- **Proof of Time Condition**: Prove that an event occurred before or after a specified date.
-- **Secure Hashing**: Uses HMAC-SHA256 with cryptographic salt for secure, non-reversible proofs.
+- Proof of Age, Balance, Membership, Range, Time Condition
+- HMAC-SHA256 with cryptographic salt
 
-### True Zero-Knowledge Proofs (Bulletproofs)
-Mathematically sound ZK proofs using elliptic curve cryptography:
+**True zero-knowledge proofs** (Bulletproofs) -- mathematically sound:
 
-- **ZK Range Proofs**: Prove a value is within a range without revealing it (using Pedersen commitments).
-- **ZK Age Proofs**: Prove minimum age without revealing exact age or birthdate.
-- **ZK Balance Proofs**: Prove sufficient balance without revealing actual amount.
-- **Serialization**: Compact proof serialization for storage and transmission.
+- ZK range, age, and balance proofs using Pedersen commitments
+- Compact serialization for storage and transmission
 
-### Stellar Blockchain Integration
-- Full Soroban SDK 25 support with BLS12-381 cryptography.
-- On-chain verification via `InvokeHostFunctionOp`.
-- `SorobanTransactionBuilder` for XDR construction.
-- Support for both HMAC and true ZK verification contracts.
+**Stellar blockchain integration**:
 
+- Soroban SDK 25 with BLS12-381 cryptography
+- On-chain verification via `InvokeHostFunctionOp`
+- `SorobanTransactionBuilder` for XDR construction
 
 ## Installation
-
-You can install **ZkpSharp** via NuGet. Run the following command in your project directory:
 
 ```bash
 dotnet add package ZkpSharp
 ```
 
-## Setup
-
-Before using the ZkpSharp library, you need to configure a secret key for HMAC (SHA-256) hashing. This key is required for generating and verifying proofs.
-
-### Setting Up the HMAC Key in Code
-
-Instead of using environment variables, you can pass the HMAC secret key directly when creating the ProofProvider. The key should be a 256-bit key (32 bytes) encoded in Base64.
-
-Here’s an example of how to configure the HMAC key directly in your application:
-
-```csharp
-using ZkpSharp;
-using ZkpSharp.Security;
-using System;
-
-class Program
-{
-    static void Main()
-    {
-        // Example base64-encoded HMAC secret key (256 bits / 32 bytes)
-        string hmacSecretKeyBase64 = "your-base64-encoded-key-here";
-
-        // Create an instance of ProofProvider with the provided HMAC key
-        var proofProvider = new ProofProvider(hmacSecretKeyBase64);
-
-        var zkp = new ZKP(proofProvider);
-        var dateOfBirth = new DateTime(2000, 1, 1); // The user's date of birth
-
-        // Generate proof of age
-        var (proof, salt) = zkp.ProveAge(dateOfBirth);
-
-        // Verify the proof of age
-        bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
-        Console.WriteLine($"Age proof valid: {isValid}");
-    }
-}
-```
-
-## Usage
-
-### Proof of Age
-
-You can prove that you are over a certain age (e.g., 18 years old) without revealing your birthdate.
-
-#### Example:
+## Quick start
 
 ```csharp
 using ZkpSharp.Core;
 using ZkpSharp.Security;
 
-var proofProvider = new ProofProvider("your-base64-hmac-key");
+var proofProvider = new ProofProvider("your-base64-encoded-32-byte-key");
 var zkp = new Zkp(proofProvider);
-var dateOfBirth = new DateTime(2000, 1, 1);
 
-// Generate and verify proof of age
-var (proof, salt) = zkp.ProveAge(dateOfBirth);
-bool isValid = zkp.VerifyAge(proof, dateOfBirth, salt);
-Console.WriteLine($"Age proof valid: {isValid}");
+// Prove age >= 18 without revealing birthdate
+var (proof, salt) = zkp.ProveAge(new DateTime(1995, 3, 15));
+bool valid = zkp.VerifyAge(proof, new DateTime(1995, 3, 15), salt);
+
+// Prove sufficient balance without revealing actual amount
+var (bProof, bSalt) = zkp.ProveBalance(1000.0, 500.0);
+bool bValid = zkp.VerifyBalance(bProof, 500.0, bSalt, 1000.0);
 ```
 
-### Proof of Balance
-
-You can prove that you have enough balance to make a transaction without revealing your actual balance.
-
-#### Example:
-
-```csharp
-using ZkpSharp;
-
-class Program
-{
-    static void Main()
-    {
-        var zkp = new ZKP();
-        double balance = 1000.0; // The user's balance
-        double requestedAmount = 500.0; // The amount the user wants to prove they can pay
-
-        // Generate proof of balance
-        var (proof, salt) = zkp.ProveBalance(balance, requestedAmount);
-
-        // Verify the proof of balance
-        bool isValidBalance = zkp.VerifyBalance(proof, requestedAmount, salt, balance);
-        Console.WriteLine($"Balance proof valid: {isValidBalance}");
-    }
-}
-```
-
-### True Zero-Knowledge Proofs (Bulletproofs)
-
-For mathematically sound ZK proofs that reveal absolutely nothing about the secret value:
+For Bulletproofs (true ZKP):
 
 ```csharp
 using ZkpSharp.Security;
-using ZkpSharp.Interfaces;
 
-// Initialize Bulletproofs provider
-IZkProofProvider zkProvider = new BulletproofsProvider();
-
-// Prove age >= 18 without revealing exact age
-var birthDate = new DateTime(1990, 5, 15);
-var (ageProof, ageCommitment) = zkProvider.ProveAge(birthDate, minAge: 18);
-bool ageValid = zkProvider.VerifyAge(ageProof, ageCommitment, minAge: 18);
-
-// Prove balance >= required without revealing actual balance
-long balance = 10000;
-long required = 5000;
-var (balanceProof, balanceCommitment) = zkProvider.ProveBalance(balance, required);
-bool balanceValid = zkProvider.VerifyBalance(balanceProof, balanceCommitment, required);
-
-// Prove value in range [min, max] without revealing value
-var (rangeProof, rangeCommitment) = zkProvider.ProveRange(value: 50, min: 0, max: 100);
-bool rangeValid = zkProvider.VerifyRange(rangeProof, rangeCommitment, min: 0, max: 100);
-
-// Serialize proofs for storage/transmission
-string serialized = zkProvider.SerializeProof(rangeProof, rangeCommitment);
-var (proof, commitment) = zkProvider.DeserializeProof(serialized);
+var zkProvider = new BulletproofsProvider();
+var (proof, commitment) = zkProvider.ProveRange(value: 42, min: 0, max: 100);
+bool valid = zkProvider.VerifyRange(proof, commitment, min: 0, max: 100);
 ```
 
-## Stellar Blockchain Integration
+See [QUICKSTART.md](QUICKSTART.md) for a complete walkthrough including Stellar integration.
 
-ZkpSharp provides production-ready integration with Stellar's Soroban smart contracts, enabling on-chain verification of zero-knowledge proofs.
+## API
 
-### Features
+### `Zkp` -- HMAC-based privacy proofs
 
-- **Soroban SDK 25**: Latest SDK with BLS12-381 and BN254 cryptographic support.
-- **HMAC-SHA256 Verification**: Fast on-chain commitment verification.
-- **True ZK Verification**: BLS12-381 based range proof verification.
-- **InvokeHostFunctionOp**: Proper Soroban transaction construction.
-- **SorobanTransactionBuilder**: Type-safe XDR encoding for contract calls.
-- **Batch Verification**: Verify multiple proofs in a single transaction.
-- **Comprehensive Testing**: Unit and integration tests included.
+| Method | Description |
+|--------|-------------|
+| `ProveAge(DateTime dateOfBirth)` | Prove age >= 18 (configurable) |
+| `VerifyAge(string proof, DateTime dateOfBirth, string salt)` | Verify age proof |
+| `ProveBalance(double balance, double requestedAmount)` | Prove balance >= requested |
+| `VerifyBalance(string proof, double requestedAmount, string salt, double balance)` | Verify balance proof |
+| `ProveMembership(string value, string[] validValues)` | Prove value is in set |
+| `VerifyMembership(string proof, string value, string salt, string[] validValues)` | Verify membership proof |
+| `ProveRange(double value, double minValue, double maxValue)` | Prove value is in range |
+| `VerifyRange(string proof, double minValue, double maxValue, double value, string salt)` | Verify range proof |
+| `ProveTimeCondition(DateTime eventDate, DateTime conditionDate)` | Prove event after date |
+| `VerifyTimeCondition(string proof, DateTime eventDate, DateTime conditionDate, string salt)` | Verify time proof |
 
-### Quick Start with Stellar
+All `Prove*` methods return `(string Proof, string Salt)`. Salts are generated automatically and must be stored alongside proofs.
 
-#### 1. Deploy the Soroban Contract
+### `BulletproofsProvider` -- True zero-knowledge proofs
 
-First, deploy the ZKP verifier contract to Stellar testnet:
+| Method | Description |
+|--------|-------------|
+| `ProveRange(long value, long min, long max)` | ZK range proof |
+| `VerifyRange(byte[] proof, byte[] commitment, long min, long max)` | Verify ZK range proof |
+| `ProveAge(DateTime birthDate, int minAge)` | ZK age proof |
+| `VerifyAge(byte[] proof, byte[] commitment, int minAge)` | Verify ZK age proof |
+| `ProveBalance(long balance, long requiredAmount)` | ZK balance proof |
+| `VerifyBalance(byte[] proof, byte[] commitment, long requiredAmount)` | Verify ZK balance proof |
+| `SerializeProof(byte[] proof, byte[] commitment)` | Serialize for storage |
+| `DeserializeProof(string serialized)` | Deserialize proof |
 
-```bash
-cd contracts/stellar
-soroban contract deploy \
-  --wasm contracts/proof-balance/target/wasm32-unknown-unknown/release/proof_balance.wasm \
-  --source <YOUR_SECRET_KEY> \
-  --network testnet
-```
+`Prove*` methods return `(byte[] proof, byte[] commitment)`.
 
-See the [Deployment Guide](contracts/stellar/DEPLOYMENT.md) for detailed instructions.
-
-#### 2. Configure Your Application
-
-Set up the HMAC key environment variable:
-
-```bash
-export ZKP_HMAC_KEY="your-base64-encoded-key-here"
-export ZKP_CONTRACT_ID="C..." # Your deployed contract ID
-```
-
-#### 3. Use ZkpSharp with Stellar
+### `StellarBlockchain` -- On-chain verification
 
 ```csharp
-using ZkpSharp;
-using ZkpSharp.Core;
-using ZkpSharp.Security;
-using ZkpSharp.Integration.Stellar;
-
-// Initialize ZKP provider
-var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
-var proofProvider = new ProofProvider(hmacKey);
-var zkp = new Zkp(proofProvider);
-
-// Initialize Stellar blockchain client
 var blockchain = new StellarBlockchain(
-    "https://horizon-testnet.stellar.org",
-    "https://soroban-testnet.stellar.org"
+    serverUrl: "https://horizon-testnet.stellar.org",
+    sorobanRpcUrl: "https://soroban-testnet.stellar.org",
+    hmacKey: hmacKey
 );
 
-// Generate a proof (off-chain)
-var balance = 1000.0;
-var requestedAmount = 500.0;
-var (proof, salt) = zkp.ProveBalance(balance, requestedAmount);
-
-// Verify the proof on Stellar blockchain (on-chain)
-var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");
-bool isValid = await blockchain.VerifyBalanceProof(
-    contractId,
-    proof,
-    balance,
-    requestedAmount,
-    salt
-);
-
-Console.WriteLine($"Proof verified on blockchain: {isValid}");
+bool result = await blockchain.VerifyBalanceProof(contractId, proof, balance, required, salt);
 ```
 
-### Advanced Usage
-
-#### Custom Transaction Building
-
-For more control over transactions:
+### `SorobanTransactionBuilder` -- Manual transaction construction
 
 ```csharp
-using StellarDotnetSdk;
-using StellarDotnetSdk.Accounts;
-using ZkpSharp.Integration.Stellar;
+var builder = new SorobanTransactionBuilder(Network.Test());
 
-// Set up source account
-var keypair = KeyPair.FromSecretSeed("S...");
-var server = new Server("https://horizon-testnet.stellar.org");
-var account = await server.Accounts.Account(keypair.AccountId);
-var sourceAccount = new Account(keypair.AccountId, account.SequenceNumber);
+// HMAC proof verification
+string xdr = builder.BuildVerifyProofTransaction(contractId, proof, data, salt, hmacKey);
 
-// Build transaction
-var txBuilder = SorobanTransactionBuilder.BuildVerifyProofTransaction(
-    sourceAccount,
-    Network.Test(),
-    contractId,
-    proof,
-    "data-to-verify",
-    salt,
-    hmacKey
-);
-
-// Get XDR
-var xdr = txBuilder.BuildXdr();
-Console.WriteLine($"Transaction XDR: {xdr}");
-
-// Submit to network (optional)
-// var transaction = txBuilder.Build();
-// var response = await server.SubmitTransaction(transaction);
+// ZK proof verification
+string zkXdr = builder.BuildVerifyZkRangeProofTransaction(contractId, proof, commitment, min, max);
+string ageXdr = builder.BuildVerifyZkAgeProofTransaction(contractId, proof, commitment, minAge);
+string balXdr = builder.BuildVerifyZkBalanceProofTransaction(contractId, proof, commitment, required);
 ```
 
-#### Batch Verification
+## Soroban contract
 
-Verify multiple proofs at once for better efficiency:
+The Rust smart contract (`contracts/stellar/contracts/proof-balance/`) exposes the following functions:
 
-```csharp
-// Generate multiple proofs
-var proofs = new List<string>();
-var salts = new List<string>();
-var data = new List<string>();
+| Function | Description |
+|----------|-------------|
+| `verify_proof` | HMAC-SHA256 proof verification |
+| `verify_balance_proof` | Balance proof with numeric comparison |
+| `verify_batch` | Batch verification of multiple proofs |
+| `verify_zk_range_proof` | BLS12-381 ZK range verification |
+| `verify_zk_age_proof` | ZK age verification |
+| `verify_zk_balance_proof` | ZK balance verification |
 
-for (int i = 0; i < 3; i++)
-{
-    var value = $"value-{i}";
-    var (proof, salt) = zkp.ProveMembership(value, new[] { value });
-    proofs.Add(proof);
-    salts.Add(salt);
-    data.Add(value);
-}
+See [contracts/stellar/README.md](contracts/stellar/README.md) for contract details and [contracts/stellar/DEPLOYMENT.md](contracts/stellar/DEPLOYMENT.md) for deployment instructions.
 
-// Verify on blockchain using batch verification
-// (Requires calling the verify_batch function in the contract)
-```
-
-#### Working with ScVal Types
-
-ZkpSharp provides helpers for working with Soroban types:
-
-```csharp
-using ZkpSharp.Integration.Stellar;
-
-// Encode data
-var bytesScVal = SorobanHelper.EncodeBytesAsScVal(myBytes);
-var stringScVal = SorobanHelper.EncodeStringAsScVal("Hello");
-var boolScVal = SorobanHelper.EncodeBoolAsScVal(true);
-
-// Decode data
-var bytes = SorobanHelper.DecodeBytesFromScVal(scVal);
-var text = SorobanHelper.DecodeStringFromScVal(scVal);
-var flag = SorobanHelper.DecodeBoolFromScVal(scVal);
-
-// Convert proofs and salts
-var proofBytes = SorobanHelper.ConvertProofToBytes(base64Proof);
-var saltBytes = SorobanHelper.ConvertSaltToBytes(base64Salt);
-```
-
-### Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Your Application                      │
-│                                                              │
-│  ┌──────────────┐        ┌─────────────────────────────┐   │
-│  │  ZkpSharp    │────────│  Generate Proof (Off-chain) │   │
-│  │  Core        │        └─────────────────────────────┘   │
-│  └──────────────┘                      │                    │
-│         │                               │                    │
-│         │                               ▼                    │
-│         │                    ┌─────────────────────┐        │
-│         │                    │  Proof + Salt       │        │
-│         │                    └─────────────────────┘        │
-│         │                               │                    │
-│         ▼                               │                    │
-│  ┌──────────────────────────┐          │                    │
-│  │  StellarBlockchain       │◄─────────┘                    │
-│  │  Integration             │                                │
-│  └──────────────────────────┘                                │
-│         │                                                    │
-└─────────┼─────────────────────────────────────────────────┘
-          │
-          │  XDR Transaction
-          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Stellar Network                           │
-│                                                              │
-│  ┌────────────────┐        ┌──────────────────────────┐    │
-│  │  Soroban RPC   │───────▶│  ZKP Verifier Contract   │    │
-│  │  (Simulate)    │        │  (HMAC-SHA256)           │    │
-│  └────────────────┘        └──────────────────────────┘    │
-│                                       │                      │
-│                                       ▼                      │
-│                            ┌─────────────────┐              │
-│                            │  Result: bool   │              │
-│                            └─────────────────┘              │
-└─────────────────────────────────────────────────────────────┘
+Application
+  |
+  +-- Zkp (HMAC proofs)
+  +-- BulletproofsProvider (ZK proofs)
+  |
+  +-- StellarBlockchain
+        +-- SorobanTransactionBuilder --> XDR
+        +-- SorobanRpcClient --> Soroban RPC --> ZkpVerifier Contract
 ```
 
-### Use Cases
+## Security
 
-- DeFi: Prove sufficient balance without revealing exact amounts
-- Identity: Verify age or membership without exposing personal data
-- Gaming: Prove achievements or stats without revealing full game state
-- Compliance: Demonstrate regulatory compliance while maintaining privacy
-- Voting: Anonymous voting with eligibility verification
+- **Key management**: Use environment variables for development. Use Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault in production.
+- **Salts**: Never reuse. ZkpSharp generates cryptographically secure random salts automatically.
+- **Contract verification**: Always verify deployed contract code matches source.
+- **Transaction fees**: Soroban transactions require XLM.
 
-### Security Considerations
+## Documentation
 
-1. **HMAC Key Management**: Store your HMAC keys securely using:
-   - Environment variables (development)
-   - Azure Key Vault (production)
-   - AWS Secrets Manager (production)
-   - HashiCorp Vault (production)
-
-2. **Contract Deployment**: Always verify contract source code before deployment
-
-3. **Transaction Fees**: Soroban transactions require XLM for fees. Ensure your account is funded.
-
-4. **Network Selection**: Use testnet for development, mainnet for production
-
-5. **Salt Generation**: Never reuse salts. ZkpSharp generates cryptographically secure random salts automatically.
-
-### Troubleshooting
-
-**Problem**: `Contract ID not configured` error
-
-**Solution**: Set the `ZKP_CONTRACT_ID` environment variable with your deployed contract ID.
-
-**Problem**: `HMAC key not configured` error
-
-**Solution**: Set the `ZKP_HMAC_KEY` environment variable with your base64-encoded 32-byte key.
-
-**Problem**: Transaction simulation fails
-
-**Solution**: Ensure the contract is deployed and the contract ID is correct. Check Soroban RPC endpoint is accessible.
+| Document | Description |
+|----------|-------------|
+| [QUICKSTART.md](QUICKSTART.md) | Step-by-step setup and usage guide |
+| [DEPLOYMENT.md](contracts/stellar/DEPLOYMENT.md) | Soroban contract deployment |
+| [STELLAR_REALITY_CHECK.md](STELLAR_REALITY_CHECK.md) | Capabilities and limitations |
+| [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) | Feature status and migration guide |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ## Contributing
 
-We welcome contributions! To contribute:
-
-1. Fork the repository.  
-2. Create a new branch for your changes (`git checkout -b feature/your-feature`).  
-3. Commit your changes (`git commit -m 'Add new feature'`).  
-4. Push to your branch (`git push origin feature/your-feature`).  
-5. Create a pull request.
-
-Please ensure that your code passes all tests and adheres to the code style of the project.
+1. Fork the repository
+2. Create a branch (`git checkout -b feature/your-feature`)
+3. Run tests (`dotnet test`)
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Contact
 
-For questions, issues, or suggestions, feel free to open an issue or contact Azimbek Sagynbaev at [sagynbaev6@gmail.com].
-
-## Additional Resources
-
-- Stellar Documentation: https://developers.stellar.org/
-- Soroban Documentation: https://soroban.stellar.org/
-- NuGet Package: https://www.nuget.org/packages/ZkpSharp
+[sagynbaev6@gmail.com](mailto:sagynbaev6@gmail.com) | [GitHub Issues](https://github.com/asagynbaev/ZkpSharp/issues) | [NuGet](https://www.nuget.org/packages/ZkpSharp)
