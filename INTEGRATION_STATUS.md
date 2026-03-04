@@ -1,6 +1,6 @@
 # ZkpSharp Integration Status
 
-Current version: 2.0.0
+Current version: 2.1.0
 
 ## Feature Status
 
@@ -16,6 +16,10 @@ Current version: 2.0.0
 | `SorobanTransactionBuilder` | Complete | XDR construction for all proof types |
 | `SorobanHelper` | Complete | SCVal encoding/decoding |
 | `SorobanRpcClient` | Complete | JSON-RPC client for Soroban |
+| `ConfidentialTransfer` | Complete | Hidden amounts + solvency proofs |
+| `SealedBidAuction` | Complete | Commit-reveal bidding with range proofs |
+| `PrivateVoting` | Complete | Anonymous binary voting + verifiable tally |
+| `CredentialProof` | Complete | Threshold / range proofs for any numeric attribute |
 
 ### Rust Soroban Contract
 
@@ -47,6 +51,7 @@ Current version: 2.0.0
 | TimeCondition proofs | 8 | Passing |
 | Edge cases | 6 | Passing |
 | Bulletproofs (secp256k1 core + proofs) | 44 | Passing |
+| Privacy SDK (CT, Auction, Voting, Credential) | 26 | Passing |
 | SorobanTransactionBuilder | 5 | Passing |
 | SorobanHelper | 7 | Passing |
 | Stellar integration | 4 | Requires config |

@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.1.0] - 2026-03-04
+
+### Added: Privacy SDK
+
+Ready-to-use privacy primitives built on top of Bulletproofs, solving real-world problems instead of exposing raw cryptographic primitives.
+
+- **`ConfidentialTransfer`** - Hide transfer amounts while proving solvency (paired Pedersen commitments + range proofs for amount and change)
+- **`SealedBidAuction`** - Commit-reveal bidding with range proof verification and automatic winner determination
+- **`PrivateVoting`** - Anonymous binary voting with Bulletproofs validity proofs and verifiable tally via ballot openings
+- **`CredentialProof`** - Prove any numeric attribute meets a threshold (`ProveMinimum`) or falls within a range (`ProveRange`) without revealing the actual value. Supports labeled credentials (income, credit score, age, balance)
+- Full serialization support for `TransferBundle` and `CredentialBundle`
+- 26 new tests covering all Privacy SDK scenarios including tamper detection, forged openings, and serialization round-trips
+
+---
+
 ## [2.0.0] - 2026-03-03
 
 ### Major Release: Real Bulletproofs from Scratch in Pure C#

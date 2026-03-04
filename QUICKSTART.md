@@ -121,7 +121,111 @@ string serialized = zkProvider.SerializeProof(proof, commitment);
 var (deserializedProof, deserializedCommitment) = zkProvider.DeserializeProof(serialized);
 ```
 
-## 5. On-chain verification (Stellar)
+## 5. Privacy SDK
+
+The Privacy SDK provides ready-to-use solutions built on top of Bulletproofs. Instead of working with raw range proofs and commitments, you get domain-specific APIs for common privacy scenarios.
+
+### Confidential transfers
+
+Hide the transfer amount while proving the sender has sufficient balance.
+
+```csharp
+using ZkpSharp.Privacy;
+
+var ct = new ConfidentialTransfer();
+
+// Sender has 10,000 and wants to transfer 2,500
+// The transfer amount is hidden from the verifier
+var transfer = ct.CreateTransfer(senderBalance: 10000, transferAmount: 2500);
+
+// Anyone can verify the transfer is valid (amount >= 0, change >= 0)
+// without learning the transfer amount or the sender's balance
+bool valid = ct.VerifyTransfer(transfer);
+
+// Serialize for storage or network transmission
+string serialized = ct.Serialize(transfer);
+var restored = ct.Deserialize(serialized);
+```
+
+### Sealed-bid auctions
+
+Commit to a hidden bid, prove it is within the auction's valid range, and reveal it later.
+
+```csharp
+using ZkpSharp.Privacy;
+
+var auction = new SealedBidAuction(minBid: 100, maxBid: 50000);
+
+// Bidder places a sealed bid (commitment + range proof)
+// The bid amount is hidden until the reveal phase
+var (bid, secret) = auction.PlaceBid(amount: 7500);
+
+// Auctioneer verifies the bid is in [100, 50000] without seeing the amount
+bool validBid = auction.VerifyBid(bid);
+
+// After the auction closes, the bidder reveals their bid
+long? revealedAmount = auction.RevealBid(bid, secret);
+// revealedAmount == 7500
+
+// Determine the winner from all revealed bids
+int winnerIndex = auction.DetermineWinner(allBids, allOpenings);
+```
+
+### Private voting
+
+Cast anonymous binary votes (yes/no) with cryptographic proof that each vote is valid.
+
+```csharp
+using ZkpSharp.Privacy;
+
+var voting = new PrivateVoting();
+
+// Each voter casts a private vote
+var (ballot1, secret1) = voting.CastVote(voteYes: true);
+var (ballot2, secret2) = voting.CastVote(voteYes: false);
+var (ballot3, secret3) = voting.CastVote(voteYes: true);
+
+// Anyone can verify each ballot is a valid vote (0 or 1)
+// without learning which way the voter voted
+bool isValid = voting.VerifyBallot(ballot1);
+
+// Tally all votes by collecting ballot openings
+var result = voting.Tally(
+    new[] { ballot1, ballot2, ballot3 },
+    new[] { secret1, secret2, secret3 });
+
+// result.YesCount == 2, result.NoCount == 1, result.TotalCount == 3
+```
+
+### Credential verification
+
+Prove that a numeric attribute (income, credit score, age, balance) meets a threshold or falls within a range without revealing the actual value.
+
+```csharp
+using ZkpSharp.Privacy;
+
+var cred = new CredentialProof();
+
+// Prove annual income >= 50,000 (without revealing actual income)
+var incomeProof = cred.ProveMinimum(
+    actualValue: 85000,
+    minimumRequired: 50000,
+    label: "annual_income");
+bool incomeValid = cred.Verify(incomeProof);
+
+// Prove credit score is in [700, 850] (without revealing exact score)
+var scoreProof = cred.ProveRange(
+    actualValue: 750,
+    min: 700, max: 850,
+    label: "credit_score");
+bool scoreValid = cred.Verify(scoreProof);
+
+// Serialize for transmission to a verifier
+string serialized = cred.Serialize(incomeProof);
+var restored = cred.Deserialize(serialized);
+```
+
+## 6. On-chain verification (Stellar)
 
 ### Deploy the Soroban contract
 

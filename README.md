@@ -22,6 +22,13 @@ A .NET library for Zero-Knowledge Proofs with Stellar Soroban blockchain integra
 - Fiat-Shamir transcript for non-interactive proofs
 - Implemented from scratch in pure C# -- zero external crypto dependencies
 
+**Privacy SDK** -- ready-to-use solutions for real-world scenarios:
+
+- Confidential transfers (hide amounts, prove solvency)
+- Sealed-bid auctions (commit-reveal with range proof)
+- Private voting (anonymous ballots with verifiable tally)
+- Credential verification (prove income, credit score, age meets threshold without revealing value)
+
 **Stellar blockchain integration**:
 
 - Soroban smart contract: full HMAC verification on-chain, structural validation for Bulletproofs
@@ -62,6 +69,23 @@ var (proof, commitment) = zkProvider.ProveRange(value: 42, min: 0, max: 100);
 bool valid = zkProvider.VerifyRange(proof, commitment, min: 0, max: 100);
 ```
 
+For Privacy SDK (real-world scenarios):
+
+```csharp
+using ZkpSharp.Privacy;
+
+// Confidential transfer -- amount hidden, proven valid
+var ct = new ConfidentialTransfer();
+var transfer = ct.CreateTransfer(senderBalance: 10000, transferAmount: 2500);
+bool valid = ct.VerifyTransfer(transfer);
+
+// Sealed-bid auction
+var auction = new SealedBidAuction(minBid: 100, maxBid: 50000);
+var (bid, secret) = auction.PlaceBid(7500);
+bool bidValid = auction.VerifyBid(bid);
+long? revealed = auction.RevealBid(bid, secret); // 7500
+```
+
 See [QUICKSTART.md](QUICKSTART.md) for a complete walkthrough including Stellar integration.
 
 ## API
@@ -97,6 +121,23 @@ All `Prove*` methods return `(string Proof, string Salt)`. Salts are generated a
 | `DeserializeProof(string serialized)` | Deserialize proof |
 
 `Prove*` methods return `(byte[] proof, byte[] commitment)`.
+
+### Privacy SDK -- Ready-to-use privacy primitives
+
+| Class | Method | Description |
+|-------|--------|-------------|
+| `ConfidentialTransfer` | `CreateTransfer(balance, amount)` | Hide transfer amount, prove solvency |
+| `ConfidentialTransfer` | `VerifyTransfer(bundle)` | Verify without knowing the amount |
+| `SealedBidAuction` | `PlaceBid(amount)` | Commit to hidden bid with range proof |
+| `SealedBidAuction` | `VerifyBid(bid)` | Verify bid is in valid range |
+| `SealedBidAuction` | `RevealBid(bid, opening)` | Reveal and verify bid after auction |
+| `SealedBidAuction` | `DetermineWinner(bids, openings)` | Pick highest valid bid |
+| `PrivateVoting` | `CastVote(voteYes)` | Commit to binary vote (0 or 1) |
+| `PrivateVoting` | `VerifyBallot(ballot)` | Verify vote is valid without seeing it |
+| `PrivateVoting` | `Tally(ballots, secrets)` | Count votes from verified openings |
+| `CredentialProof` | `ProveMinimum(value, threshold, label)` | Prove attribute >= threshold |
+| `CredentialProof` | `ProveRange(value, min, max, label)` | Prove attribute in range |
+| `CredentialProof` | `Verify(credential)` | Verify credential proof |
 
 ### `StellarBlockchain` -- On-chain verification
 
@@ -167,6 +208,12 @@ See [contracts/stellar/README.md](contracts/stellar/README.md) for contract deta
 
 ```
 Application
+  |
+  +-- Privacy SDK (ready-to-use solutions)
+  |     +-- ConfidentialTransfer (hidden amounts + solvency proofs)
+  |     +-- SealedBidAuction (commit-reveal with range proofs)
+  |     +-- PrivateVoting (anonymous ballots + verifiable tally)
+  |     +-- CredentialProof (threshold / range proofs for any attribute)
   |
   +-- Zkp (HMAC-SHA256 commitment proofs)
   +-- BulletproofsProvider (real ZKP)
