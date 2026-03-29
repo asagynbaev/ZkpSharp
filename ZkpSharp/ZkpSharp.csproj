@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>2.0.0</PackageVersion>
+    <PackageVersion>2.2.0</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/asagynbaev/ZkpSharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asagynbaev/ZkpSharp</RepositoryUrl>
@@ -13,7 +13,7 @@
     <Authors>Azimbek Sagynbaev</Authors>
     <Description>Production-ready .NET library for Zero-Knowledge Proofs with real Bulletproofs on secp256k1 implemented from scratch in pure C#. Features Pedersen commitments, inner product arguments, Fiat-Shamir transcripts, HMAC-based privacy proofs, and Stellar Soroban blockchain integration.</Description>
     <PackageTags>zkp;zero-knowledge-proof;bulletproofs;cryptography;privacy;blockchain;stellar;soroban;smart-contracts;secp256k1;hmac;pedersen-commitment;range-proof;inner-product-argument</PackageTags>
-    <PackageReleaseNotes>v2.0.0: Real Bulletproofs from scratch in pure C# on secp256k1. Pedersen commitments (v*G + r*H), inner product argument for O(log n) proof size (~690 bytes), Fiat-Shamir transcript. No external crypto dependencies. 108 tests passing. On-chain structural validation with Fiat-Shamir binding.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.2.0: Soroban RPC simulateTransaction parsing (results[0].xdr), full TX envelopes for all Verify* paths via ZKP_SOURCE_ACCOUNT or *WithSourceAccount, ZK WithAccount builders, optional testnet smoke tests, Stellar CLI docs refresh, soroban-sdk 25.3. See CHANGELOG.md.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

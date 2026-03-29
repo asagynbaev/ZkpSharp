@@ -1,6 +1,6 @@
 # ZkpSharp Integration Status
 
-Current version: 2.1.0
+Current version: 2.2.0
 
 ## Feature Status
 
@@ -38,7 +38,7 @@ Current version: 2.1.0
 |---------|---------|--------|
 | `stellar-dotnet-sdk` | 14.0.1 | Latest |
 | `stellar-dotnet-sdk-xdr` | 14.0.1 | Latest |
-| `soroban-sdk` (Rust) | 25 | Latest |
+| `soroban-sdk` (Rust) | 25.3 | Pinned in workspace `Cargo.toml` |
 
 ### Test Coverage
 
@@ -54,7 +54,8 @@ Current version: 2.1.0
 | Privacy SDK (CT, Auction, Voting, Credential) | 26 | Passing |
 | SorobanTransactionBuilder | 5 | Passing |
 | SorobanHelper | 7 | Passing |
-| Stellar integration | 4 | Requires config |
+| Stellar (unit + Horizon smoke) | 4 | Passing |
+| Stellar testnet contract smoke | 7 | Skipped unless `ZKP_CONTRACT_ID` set |
 
 ## API Stability
 
@@ -66,6 +67,10 @@ Current version: 2.1.0
 | `StellarBlockchain` | Stable |
 | `SorobanTransactionBuilder` | Stable |
 | `SorobanHelper` | Stable |
+
+## Breaking Changes in 2.2.0
+
+1. **`ZKP_SOURCE_ACCOUNT`**: `StellarBlockchain.VerifyProof`, `VerifyBalanceProof`, and `VerifyZk*` now require this environment variable (funded `G...` on the same network as Horizon) unless you call the `*WithSourceAccount` overloads instead.
 
 ## Breaking Changes in 2.0.0
 
@@ -105,11 +110,11 @@ cargo build --release --target wasm32-unknown-unknown
 ## Known Issues
 
 1. **Rust tests**: Run with `cargo test` in the contract directory.
-2. **Integration tests**: Require deployed contract and environment variables.
+2. **On-chain smoke tests**: Set `ZKP_CONTRACT_ID`, `ZKP_SOURCE_ACCOUNT`, and `ZKP_HMAC_KEY`, then `dotnet test --filter "FullyQualifiedName~StellarTestnetSmokeTests"`.
 
 ## Roadmap
 
-### 2.1.0 (Next)
+### 2.x
 - [ ] Aggregated range proofs (multiple values in a single proof)
 - [ ] Batch verification (verify N proofs faster than N individual verifications)
 - [ ] Performance optimization (precomputed multiscalar multiplication)

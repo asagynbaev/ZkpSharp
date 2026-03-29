@@ -32,3 +32,24 @@ jobs:
 
       - name: Run tests
         run: dotnet test --configuration Release --no-build --verbosity normal
+
+  soroban-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts/stellar
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable + wasm32
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Build proof-balance WASM (release)
+        run: cargo build --target wasm32-unknown-unknown --release -p proof-balance
+
+      - name: Run Rust contract tests
+        run: cargo test -p proof-balance

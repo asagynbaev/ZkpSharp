@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.2.0] - 2026-03-29
+
+### Fixed
+
+- **Soroban RPC**: `simulateTransaction` results are read from `results[0].xdr` (current Stellar RPC); legacy `returnValue` is still accepted.
+- **Transaction envelopes**: `VerifyProof`, `VerifyBalanceProof`, and `VerifyZk*` now always use a full envelope for simulation (via `ZKP_SOURCE_ACCOUNT` or explicit `*WithSourceAccount`), instead of sending a partial XDR blob that RPC could not unmarshal.
+- **ScVal bool**: decode unit-variant style returns (discriminant `2` → false).
+
+### Added
+
+- `BuildVerifyZkRangeProofTransactionWithAccount`, `BuildVerifyZkAgeProofTransactionWithAccount`, `BuildVerifyZkBalanceProofTransactionWithAccount`.
+- `VerifyZkRangeProofWithSourceAccount`, `VerifyZkAgeProofWithSourceAccount`, `VerifyZkBalanceProofWithSourceAccount`.
+- `StellarTestnetSmokeTests` (optional testnet smoke; requires `ZKP_CONTRACT_ID`, `ZKP_SOURCE_ACCOUNT`, `ZKP_HMAC_KEY`). Filter: `FullyQualifiedName~StellarTestnetSmokeTests`.
+- `Xunit.SkippableFact` test dependency.
+
+### Changed (breaking)
+
+- **`ZKP_SOURCE_ACCOUNT` required** for `VerifyProof` / `VerifyBalanceProof` / `VerifyZk*` when not using the `*WithSourceAccount` overloads. Set the env var to a funded `G...` on the target network, or pass the source account explicitly.
+
+### Docs & tooling
+
+- README, `STELLAR_REALITY_CHECK.md`, `QUICKSTART.md`, `DEPLOYMENT.md`: document `ZKP_SOURCE_ACCOUNT`; refresh links to [developers.stellar.org](https://developers.stellar.org/) (Stellar CLI install path, smart contracts, RPC).
+- Contract workspace: `soroban-sdk` pinned to **25.3**; `DEPLOYMENT.md` / `Makefile` use **`stellar`** CLI (replaces legacy `soroban-cli` commands).
+- Test project: `Microsoft.NET.Test.Sdk` 18.3.0, `xunit.runner.visualstudio` 3.1.5.
+
+---
+
 ## [2.1.0] - 2026-03-04
 
 ### Added: Privacy SDK

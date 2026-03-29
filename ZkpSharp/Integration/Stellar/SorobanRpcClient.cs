@@ -117,24 +117,17 @@ namespace ZkpSharp.Integration.Stellar
         {
             try
             {
-                // The result should contain returnValue in XDR format
-                // For boolean results, we need to decode the XDR
-                if (!string.IsNullOrEmpty(result.ReturnValue))
-                {
-                    // Decode XDR to get the boolean value using proper XDR decoding
-                    return DecodeBooleanFromXdr(result.ReturnValue);
-                }
+                if (!string.IsNullOrEmpty(result.Error))
+                    throw new InvalidOperationException($"Simulation failed: {result.Error}");
 
-                // If no return value but also no error, log warning
-                if (string.IsNullOrEmpty(result.Error))
-                {
-                    // Some contracts might not return a value
-                    // Default to false for safety
+                var returnXdr = result.ReturnValue;
+                if (string.IsNullOrEmpty(returnXdr) && result.Results is { Count: > 0 })
+                    returnXdr = result.Results[0].Xdr;
+
+                if (string.IsNullOrEmpty(returnXdr))
                     return false;
-                }
 
-                // If there's an error, throw it
-                throw new InvalidOperationException($"Contract execution error: {result.Error}");
+                return DecodeBoolReturnXdr(returnXdr);
             }
             catch (InvalidOperationException)
             {
@@ -147,6 +140,25 @@ namespace ZkpSharp.Integration.Stellar
         }
 
         /// <summary>
+        /// Decodes a Soroban <c>bool</c> return value from simulation (<c>results[0].xdr</c> or legacy <c>returnValue</c>).
+        /// </summary>
+        private static bool DecodeBoolReturnXdr(string xdrBase64)
+        {
+            try
+            {
+                var data = Convert.FromBase64String(xdrBase64);
+                if (data.Length == 4)
+                    return SorobanHelper.DecodeBoolFromScVal(xdrBase64);
+            }
+            catch (ArgumentException)
+            {
+                // Fall through to wider XDR layouts
+            }
+
+            return DecodeBooleanFromXdr(xdrBase64);
+        }
+
+        /// <summary>
         /// Decodes a boolean value from XDR-encoded ScVal.
         /// </summary>
         /// <param name="xdrBase64">The base64-encoded XDR ScVal.</param>
@@ -156,7 +168,7 @@ namespace ZkpSharp.Integration.Stellar
         /// proper Stellar SDK support which is under development for Soroban.
         /// For production use, consider using Stellar JavaScript SDK.
         /// </remarks>
-        private bool DecodeBooleanFromXdr(string xdrBase64)
+        private static bool DecodeBooleanFromXdr(string xdrBase64)
         {
             try
             {
@@ -192,11 +204,11 @@ namespace ZkpSharp.Integration.Stellar
                     return value != 0;
                 }
 
-                // SCValType::SCV_TRUE = 1 (alternative representation)
+                // Unit variants ScTrue / ScFalse (discriminant-only ScVal, common on Soroban RPC)
                 if (typeDiscriminant == 1)
-                {
                     return true;
-                }
+                if (typeDiscriminant == 2)
+                    return false;
 
                 // Default to false for unknown formats
                 return false;
@@ -253,11 +265,21 @@ namespace ZkpSharp.Integration.Stellar
             [JsonPropertyName("returnValue")]
             public string? ReturnValue { get; set; }
 
+            /// <summary>Host function results from current Soroban RPC (preferred over <see cref="ReturnValue"/>).</summary>
+            [JsonPropertyName("results")]
+            public List<SimulateTransactionHostResult>? Results { get; set; }
+
             [JsonPropertyName("error")]
             public string? Error { get; set; }
 
             [JsonPropertyName("cost")]
             public CostInfo? Cost { get; set; }
+        }
+
+        private class SimulateTransactionHostResult
+        {
+            [JsonPropertyName("xdr")]
+            public string? Xdr { get; set; }
         }
 
         private class CostInfo

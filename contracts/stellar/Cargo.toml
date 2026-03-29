@@ -5,7 +5,8 @@ members = [
 ]
 
 [workspace.dependencies]
-soroban-sdk = "25"
+# Pin minor series for reproducible builds; see https://crates.io/crates/soroban-sdk
+soroban-sdk = "25.3"
 
 [profile.release]
 opt-level = "z"
@@ -17,7 +18,7 @@ panic = "abort"
 codegen-units = 1
 lto = true
 
-# For more information about this profile see https://soroban.stellar.org/docs/basic-tutorials/logging#cargotoml-profile
+# Logging profile: https://docs.rs/soroban-sdk/latest/soroban_sdk/macro.log.html
 [profile.release-with-logs]
 inherits = "release"
 debug-assertions = true

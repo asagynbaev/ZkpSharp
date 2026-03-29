@@ -104,15 +104,17 @@ var isValid = await blockchain.VerifyProofWithSourceAccount(
 
 1. **On-chain Bulletproofs verification**: Soroban does not natively support secp256k1 elliptic curve operations. Full Bulletproofs verification (point decompression, multi-exponentiation, inner product check) must happen off-chain. The on-chain contract performs structural validation and Fiat-Shamir transcript binding as a tamper-detection mechanism.
 
-2. **Transaction Signing**: ZkpSharp builds unsigned transactions. You must sign with your secret key before submission.
+2. **Simulation source account**: `VerifyProof`, `VerifyBalanceProof`, and `VerifyZk*` (without `WithSourceAccount`) read **`ZKP_SOURCE_ACCOUNT`** for the funded G... account used in the simulated transaction envelope. Set it alongside `ZKP_HMAC_KEY` / `ZKP_CONTRACT_ID`, or call the `*WithSourceAccount` overloads explicitly.
 
-3. **Fee Estimation**: Use Soroban RPC `simulateTransaction` to get accurate fee estimates.
+3. **Transaction Signing**: ZkpSharp builds unsigned transactions. You must sign with your secret key before submission.
 
-4. **Contract Deployment**: The Rust contract must be deployed separately using Stellar CLI.
+4. **Fee Estimation**: Use Soroban RPC `simulateTransaction` to get accurate fee estimates.
 
-5. **Network Fees**: On-chain verification requires XLM for transaction fees.
+5. **Contract Deployment**: The Rust contract must be deployed separately using Stellar CLI.
 
-6. **Proof generation performance**: Bulletproofs proof generation involves multiple EC scalar multiplications and is slower than HMAC-based proofs. For latency-sensitive applications, consider caching proofs or generating them asynchronously.
+6. **Network Fees**: On-chain verification requires XLM for transaction fees.
+
+7. **Proof generation performance**: Bulletproofs proof generation involves multiple EC scalar multiplications and is slower than HMAC-based proofs. For latency-sensitive applications, consider caching proofs or generating them asynchronously.
 
 ## Security Considerations
 
@@ -127,8 +129,8 @@ var isValid = await blockchain.VerifyProofWithSourceAccount(
 ## Next Steps
 
 1. Deploy the ZkpVerifier contract to testnet
-2. Set environment variables: `ZKP_HMAC_KEY`, `ZKP_CONTRACT_ID`
-3. Run integration tests to verify setup
+2. Set environment variables: `ZKP_HMAC_KEY`, `ZKP_CONTRACT_ID`, `ZKP_SOURCE_ACCOUNT` (funded account on that network; optional if you only use `*WithSourceAccount` in code)
+3. Run integration tests to verify setup (`dotnet test --filter "FullyQualifiedName~StellarTestnetSmokeTests"` when the contract is deployed)
 4. Move to mainnet when ready
 
 See [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) for current feature status.

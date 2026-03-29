@@ -141,17 +141,19 @@ All `Prove*` methods return `(string Proof, string Salt)`. Salts are generated a
 
 ### `StellarBlockchain` -- On-chain verification
 
+Simulation uses Soroban RPC `simulateTransaction`. Methods without `WithSourceAccount` require environment variable **`ZKP_SOURCE_ACCOUNT`** (funded `G...` on the same network). Alternatively use `VerifyProofWithSourceAccount`, `VerifyBalanceProofWithSourceAccount`, or `VerifyZk*WithSourceAccount`.
+
 | Method | Description |
 |--------|-------------|
-| `VerifyProof(contractId, proof, salt, value)` | HMAC proof on-chain verification |
-| `VerifyBalanceProof(contractId, proof, balance, required, salt)` | HMAC balance proof on-chain |
-| `VerifyZkRangeProof(contractId, proof, commitment, min, max)` | Bulletproofs range proof on-chain |
-| `VerifyZkAgeProof(contractId, proof, commitment, minAge)` | Bulletproofs age proof on-chain |
-| `VerifyZkBalanceProof(contractId, proof, commitment, requiredAmount)` | Bulletproofs balance proof on-chain |
+| `VerifyProof(contractId, proof, salt, value)` | HMAC proof (uses `ZKP_SOURCE_ACCOUNT` or use `VerifyProofWithSourceAccount`) |
+| `VerifyBalanceProof(contractId, proof, balance, required, salt)` | HMAC balance proof (same) |
+| `VerifyZkRangeProof` / `VerifyZkAgeProof` / `VerifyZkBalanceProof` | ZK on-chain structural check (same) |
 | `VerifyProofWithTransactionXdrAsync(xdr)` | Verify using pre-built XDR |
 | `GetAccountBalance(accountId)` | Get XLM balance for an account |
 
 ```csharp
+Environment.SetEnvironmentVariable("ZKP_SOURCE_ACCOUNT", sourceAccountId);
+
 var blockchain = new StellarBlockchain(
     serverUrl: "https://horizon-testnet.stellar.org",
     sorobanRpcUrl: "https://soroban-testnet.stellar.org",

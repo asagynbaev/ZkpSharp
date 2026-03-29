@@ -182,7 +182,7 @@ Test coverage includes:
 ### Prerequisites
 
 - Rust 1.75+ with `wasm32-unknown-unknown` target
-- Soroban CLI (`cargo install soroban-cli`)
+- Stellar CLI (`cargo install --locked stellar-cli --features opt`; see [DEPLOYMENT.md](DEPLOYMENT.md))
 - Stellar account for deployment
 
 ### Building
@@ -226,7 +226,7 @@ cargo fmt
 
 - **[Deployment Guide](DEPLOYMENT.md)**: Step-by-step deployment instructions
 - **[Main README](../../README.md)**: ZkpSharp library documentation
-- **[Soroban Docs](https://soroban.stellar.org/docs)**: Official Soroban documentation
+- **[Smart contracts @ Stellar Docs](https://developers.stellar.org/docs/smart-contracts)**: Official Soroban / smart contract documentation
 
 ## Troubleshooting
 

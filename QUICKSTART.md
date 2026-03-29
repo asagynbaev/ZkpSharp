@@ -5,7 +5,7 @@ Get up and running with ZkpSharp in 5 minutes.
 ## Prerequisites
 
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
-- (Optional) [Rust toolchain](https://rustup.rs/) and [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/stellar-cli) for on-chain verification
+- (Optional) [Rust toolchain](https://rustup.rs/) and [Stellar CLI](https://developers.stellar.org/docs/tools/cli/stellar-cli) for on-chain verification
 
 ## 1. Install the package
 
@@ -247,6 +247,7 @@ Save the contract ID from the output.
 ```bash
 export ZKP_HMAC_KEY="your-base64-encoded-key"
 export ZKP_CONTRACT_ID="CABC..."
+export ZKP_SOURCE_ACCOUNT="G..."   # funded account on the same network (for RPC simulation)
 ```
 
 ### Verify HMAC proofs on-chain
@@ -258,6 +259,7 @@ using ZkpSharp.Integration.Stellar;
 
 var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY")!;
 var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID")!;
+// ZKP_SOURCE_ACCOUNT must be set for VerifyBalanceProof / VerifyProof (or use *WithSourceAccount in code)
 
 var zkp = new Zkp(new ProofProvider(hmacKey));
 
@@ -280,6 +282,7 @@ using ZkpSharp.Security;
 using ZkpSharp.Integration.Stellar;
 
 var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID")!;
+// ZKP_SOURCE_ACCOUNT must be set for VerifyZk* (or use VerifyZk*WithSourceAccount)
 
 var blockchain = new StellarBlockchain(
     "https://horizon-testnet.stellar.org",
@@ -330,6 +333,8 @@ string zkXdr = builder.BuildVerifyZkRangeProofTransaction(
     min: 0, max: 100
 );
 
+// Operation-only XDR from BuildVerify* (without *WithAccount) is not a full transaction envelope.
+// Prefer StellarBlockchain + ZKP_SOURCE_ACCOUNT, or build *WithAccount XDR via SorobanTransactionBuilder + Horizon AccountResponse.
 var rpcClient = new SorobanRpcClient("https://soroban-testnet.stellar.org");
 bool result = await rpcClient.InvokeContractWithTransactionXdrAsync(zkXdr);
 ```

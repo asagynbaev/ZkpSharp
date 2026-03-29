@@ -224,6 +224,44 @@ namespace ZkpSharp.Integration.Stellar
         }
 
         /// <summary>
+        /// Same as <see cref="BuildVerifyZkRangeProofTransaction"/> but wraps a full transaction envelope for RPC simulation.
+        /// </summary>
+        public string BuildVerifyZkRangeProofTransactionWithAccount(
+            AccountResponse sourceAccount,
+            string contractId,
+            string proof,
+            string commitment,
+            long min,
+            long max)
+        {
+            if (sourceAccount == null)
+                throw new ArgumentNullException(nameof(sourceAccount));
+            if (string.IsNullOrEmpty(contractId))
+                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
+            if (string.IsNullOrEmpty(proof))
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            if (string.IsNullOrEmpty(commitment))
+                throw new ArgumentException("Commitment cannot be null or empty.", nameof(commitment));
+
+            var invocation = new SorobanInvocation
+            {
+                ContractId = contractId,
+                FunctionName = "verify_zk_range_proof",
+                Arguments = new[]
+                {
+                    CreateBytesArgument(proof, isBase64: true),
+                    CreateBytesN33Argument(commitment),
+                    CreateI64Argument(min),
+                    CreateI64Argument(max)
+                },
+                SourceAccountId = sourceAccount.AccountId,
+                SequenceNumber = sourceAccount.SequenceNumber
+            };
+
+            return BuildInvocationXdrWithAccount(invocation);
+        }
+
+        /// <summary>
         /// Builds a transaction XDR for invoking the verify_zk_age_proof function.
         /// </summary>
         public string BuildVerifyZkAgeProofTransaction(
@@ -253,6 +291,42 @@ namespace ZkpSharp.Integration.Stellar
         }
 
         /// <summary>
+        /// Same as <see cref="BuildVerifyZkAgeProofTransaction"/> but wraps a full transaction envelope for RPC simulation.
+        /// </summary>
+        public string BuildVerifyZkAgeProofTransactionWithAccount(
+            AccountResponse sourceAccount,
+            string contractId,
+            string proof,
+            string commitment,
+            uint minAge)
+        {
+            if (sourceAccount == null)
+                throw new ArgumentNullException(nameof(sourceAccount));
+            if (string.IsNullOrEmpty(contractId))
+                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
+            if (string.IsNullOrEmpty(proof))
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            if (string.IsNullOrEmpty(commitment))
+                throw new ArgumentException("Commitment cannot be null or empty.", nameof(commitment));
+
+            var invocation = new SorobanInvocation
+            {
+                ContractId = contractId,
+                FunctionName = "verify_zk_age_proof",
+                Arguments = new[]
+                {
+                    CreateBytesArgument(proof, isBase64: true),
+                    CreateBytesN33Argument(commitment),
+                    CreateU32Argument(minAge)
+                },
+                SourceAccountId = sourceAccount.AccountId,
+                SequenceNumber = sourceAccount.SequenceNumber
+            };
+
+            return BuildInvocationXdrWithAccount(invocation);
+        }
+
+        /// <summary>
         /// Builds a transaction XDR for invoking the verify_zk_balance_proof function.
         /// </summary>
         public string BuildVerifyZkBalanceProofTransaction(
@@ -279,6 +353,42 @@ namespace ZkpSharp.Integration.Stellar
             };
 
             return BuildInvocationXdr(invocation);
+        }
+
+        /// <summary>
+        /// Same as <see cref="BuildVerifyZkBalanceProofTransaction"/> but wraps a full transaction envelope for RPC simulation.
+        /// </summary>
+        public string BuildVerifyZkBalanceProofTransactionWithAccount(
+            AccountResponse sourceAccount,
+            string contractId,
+            string proof,
+            string commitment,
+            long requiredAmount)
+        {
+            if (sourceAccount == null)
+                throw new ArgumentNullException(nameof(sourceAccount));
+            if (string.IsNullOrEmpty(contractId))
+                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
+            if (string.IsNullOrEmpty(proof))
+                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
+            if (string.IsNullOrEmpty(commitment))
+                throw new ArgumentException("Commitment cannot be null or empty.", nameof(commitment));
+
+            var invocation = new SorobanInvocation
+            {
+                ContractId = contractId,
+                FunctionName = "verify_zk_balance_proof",
+                Arguments = new[]
+                {
+                    CreateBytesArgument(proof, isBase64: true),
+                    CreateBytesN33Argument(commitment),
+                    CreateI64Argument(requiredAmount)
+                },
+                SourceAccountId = sourceAccount.AccountId,
+                SequenceNumber = sourceAccount.SequenceNumber
+            };
+
+            return BuildInvocationXdrWithAccount(invocation);
         }
 
         private void ValidateInputs(string contractId, string proof, string salt)

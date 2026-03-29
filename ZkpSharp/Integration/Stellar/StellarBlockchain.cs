@@ -82,6 +82,27 @@ namespace ZkpSharp.Integration.Stellar
         }
 
         /// <summary>
+        /// Resolves the account used as the transaction source for Soroban <c>simulateTransaction</c>.
+        /// </summary>
+        /// <remarks>
+        /// Set environment variable <c>ZKP_SOURCE_ACCOUNT</c> to a funded account (G...) on the same network as <see cref="_serverUrl"/>.
+        /// Alternatively, call <see cref="VerifyProofWithSourceAccount"/> (or other <c>*WithSourceAccount</c> methods) with an explicit id.
+        /// </remarks>
+        private static string GetSimulationSourceAccountIdOrThrow()
+        {
+            var id = Environment.GetEnvironmentVariable("ZKP_SOURCE_ACCOUNT");
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new InvalidOperationException(
+                    "Soroban RPC simulation requires a funded source account. " +
+                    "Set environment variable ZKP_SOURCE_ACCOUNT to a G... account id on this network, " +
+                    "or use VerifyProofWithSourceAccount / VerifyBalanceProofWithSourceAccount / VerifyZk*WithSourceAccount.");
+            }
+
+            return id.Trim();
+        }
+
+        /// <summary>
         /// Verifies a zero-knowledge proof on the blockchain using a Soroban smart contract.
         /// </summary>
         /// <param name="contractId">The smart contract address or ID.</param>
@@ -90,54 +111,13 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="value">The value that was proven.</param>
         /// <returns>True if the proof is valid, false otherwise.</returns>
         /// <remarks>
-        /// This method builds a transaction XDR for invoking the verify_proof function on the Soroban contract.
-        /// The transaction is simulated (not submitted to the network) to get the verification result.
-        /// For submitting transactions to the network, use VerifyProofAndSubmitAsync method.
+        /// Builds a full transaction envelope and simulates it via RPC (does not submit).
+        /// Requires <c>ZKP_SOURCE_ACCOUNT</c> unless you use <see cref="VerifyProofWithSourceAccount"/>.
         /// </remarks>
-        public async Task<bool> VerifyProof(string contractId, string proof, string salt, string value)
+        public Task<bool> VerifyProof(string contractId, string proof, string salt, string value)
         {
-            if (string.IsNullOrEmpty(contractId))
-            {
-                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
-            }
-
-            if (string.IsNullOrEmpty(proof))
-            {
-                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
-            }
-
-            if (string.IsNullOrEmpty(salt))
-            {
-                throw new ArgumentException("Salt cannot be null or empty.", nameof(salt));
-            }
-
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException("Value cannot be null or empty.", nameof(value));
-            }
-
-            var hmacKey = GetHmacKeyForVerification();
-            
-            try
-            {
-                var transactionBuilder = new SorobanTransactionBuilder(_network);
-                var transactionXdr = transactionBuilder.BuildVerifyProofTransaction(
-                    contractId: contractId,
-                    proof: proof,
-                    data: value,
-                    salt: salt,
-                    hmacKey: hmacKey
-                );
-
-                var rpcClient = GetRpcClient();
-                return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
-            }
-            catch (NotSupportedException)
-            {
-                throw new InvalidOperationException(
-                    "On-chain verification requires a valid source account. " +
-                    "Use VerifyProofWithSourceAccount method or provide a pre-built transaction XDR.");
-            }
+            var source = GetSimulationSourceAccountIdOrThrow();
+            return VerifyProofWithSourceAccount(source, contractId, proof, salt, value);
         }
 
         /// <summary>
@@ -210,53 +190,18 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="requiredAmount">The required amount.</param>
         /// <param name="salt">The salt used to generate the proof (Base64 encoded).</param>
         /// <returns>True if the proof is valid and balance is sufficient, false otherwise.</returns>
-        public async Task<bool> VerifyBalanceProof(
+        /// <remarks>
+        /// Requires <c>ZKP_SOURCE_ACCOUNT</c> unless you use <see cref="VerifyBalanceProofWithSourceAccount"/>.
+        /// </remarks>
+        public Task<bool> VerifyBalanceProof(
             string contractId,
             string proof,
             double balance,
             double requiredAmount,
             string salt)
         {
-            if (string.IsNullOrEmpty(contractId))
-            {
-                throw new ArgumentException("Contract ID cannot be null or empty.", nameof(contractId));
-            }
-
-            if (string.IsNullOrEmpty(proof))
-            {
-                throw new ArgumentException("Proof cannot be null or empty.", nameof(proof));
-            }
-
-            if (string.IsNullOrEmpty(salt))
-            {
-                throw new ArgumentException("Salt cannot be null or empty.", nameof(salt));
-            }
-
-            var hmacKey = GetHmacKeyForVerification();
-            var balanceStr = balance.ToString(CultureInfo.InvariantCulture);
-            var requiredAmountStr = requiredAmount.ToString(CultureInfo.InvariantCulture);
-
-            try
-            {
-                var transactionBuilder = new SorobanTransactionBuilder(_network);
-                var transactionXdr = transactionBuilder.BuildVerifyBalanceProofTransaction(
-                    contractId: contractId,
-                    proof: proof,
-                    balanceData: balanceStr,
-                    requiredAmountData: requiredAmountStr,
-                    salt: salt,
-                    hmacKey: hmacKey
-                );
-
-                var rpcClient = GetRpcClient();
-                return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
-            }
-            catch (NotSupportedException)
-            {
-                throw new InvalidOperationException(
-                    "On-chain verification requires a valid source account. " +
-                    "Use VerifyBalanceProofWithSourceAccount method or provide a pre-built transaction XDR.");
-            }
+            var source = GetSimulationSourceAccountIdOrThrow();
+            return VerifyBalanceProofWithSourceAccount(source, contractId, proof, balance, requiredAmount, salt);
         }
 
         /// <summary>
@@ -364,7 +309,8 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="min">The minimum value of the proven range.</param>
         /// <param name="max">The maximum value of the proven range.</param>
         /// <returns>True if the on-chain structural and Fiat-Shamir binding verification passes.</returns>
-        public async Task<bool> VerifyZkRangeProof(
+        /// <remarks>Requires <c>ZKP_SOURCE_ACCOUNT</c> unless you use <see cref="VerifyZkRangeProofWithSourceAccount"/>.</remarks>
+        public Task<bool> VerifyZkRangeProof(
             string contractId,
             byte[] proof,
             byte[] commitment,
@@ -372,18 +318,8 @@ namespace ZkpSharp.Integration.Stellar
             long max)
         {
             ValidateZkInputs(contractId, proof, commitment);
-
-            var transactionBuilder = new SorobanTransactionBuilder(_network);
-            var transactionXdr = transactionBuilder.BuildVerifyZkRangeProofTransaction(
-                contractId: contractId,
-                proof: Convert.ToBase64String(proof),
-                commitment: Convert.ToBase64String(commitment),
-                min: min,
-                max: max
-            );
-
-            var rpcClient = GetRpcClient();
-            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+            var source = GetSimulationSourceAccountIdOrThrow();
+            return VerifyZkRangeProofWithSourceAccount(source, contractId, proof, commitment, min, max);
         }
 
         /// <summary>
@@ -394,24 +330,16 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="commitment">The Pedersen commitment (33-byte compressed secp256k1 point).</param>
         /// <param name="minAge">The minimum age that was proven.</param>
         /// <returns>True if verification passes.</returns>
-        public async Task<bool> VerifyZkAgeProof(
+        /// <remarks>Requires <c>ZKP_SOURCE_ACCOUNT</c> unless you use <see cref="VerifyZkAgeProofWithSourceAccount"/>.</remarks>
+        public Task<bool> VerifyZkAgeProof(
             string contractId,
             byte[] proof,
             byte[] commitment,
             uint minAge)
         {
             ValidateZkInputs(contractId, proof, commitment);
-
-            var transactionBuilder = new SorobanTransactionBuilder(_network);
-            var transactionXdr = transactionBuilder.BuildVerifyZkAgeProofTransaction(
-                contractId: contractId,
-                proof: Convert.ToBase64String(proof),
-                commitment: Convert.ToBase64String(commitment),
-                minAge: minAge
-            );
-
-            var rpcClient = GetRpcClient();
-            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+            var source = GetSimulationSourceAccountIdOrThrow();
+            return VerifyZkAgeProofWithSourceAccount(source, contractId, proof, commitment, minAge);
         }
 
         /// <summary>
@@ -422,21 +350,102 @@ namespace ZkpSharp.Integration.Stellar
         /// <param name="commitment">The Pedersen commitment (33-byte compressed secp256k1 point).</param>
         /// <param name="requiredAmount">The minimum balance that was proven.</param>
         /// <returns>True if verification passes.</returns>
-        public async Task<bool> VerifyZkBalanceProof(
+        /// <remarks>Requires <c>ZKP_SOURCE_ACCOUNT</c> unless you use <see cref="VerifyZkBalanceProofWithSourceAccount"/>.</remarks>
+        public Task<bool> VerifyZkBalanceProof(
             string contractId,
             byte[] proof,
             byte[] commitment,
             long requiredAmount)
         {
             ValidateZkInputs(contractId, proof, commitment);
+            var source = GetSimulationSourceAccountIdOrThrow();
+            return VerifyZkBalanceProofWithSourceAccount(source, contractId, proof, commitment, requiredAmount);
+        }
+
+        /// <summary>
+        /// Verifies a Bulletproofs ZK range proof on-chain using a funded source account (valid envelope for RPC simulation).
+        /// </summary>
+        public async Task<bool> VerifyZkRangeProofWithSourceAccount(
+            string sourceAccountId,
+            string contractId,
+            byte[] proof,
+            byte[] commitment,
+            long min,
+            long max)
+        {
+            ValidateZkInputs(contractId, proof, commitment);
+            if (string.IsNullOrEmpty(sourceAccountId))
+                throw new ArgumentException("Source account ID cannot be null or empty.", nameof(sourceAccountId));
+
+            Server server = new(_serverUrl);
+            AccountResponse sourceAccount = await server.Accounts.Account(sourceAccountId);
 
             var transactionBuilder = new SorobanTransactionBuilder(_network);
-            var transactionXdr = transactionBuilder.BuildVerifyZkBalanceProofTransaction(
+            var transactionXdr = transactionBuilder.BuildVerifyZkRangeProofTransactionWithAccount(
+                sourceAccount: sourceAccount,
                 contractId: contractId,
                 proof: Convert.ToBase64String(proof),
                 commitment: Convert.ToBase64String(commitment),
-                requiredAmount: requiredAmount
-            );
+                min: min,
+                max: max);
+
+            var rpcClient = GetRpcClient();
+            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+        }
+
+        /// <summary>
+        /// Verifies a Bulletproofs ZK age proof on-chain using a funded source account.
+        /// </summary>
+        public async Task<bool> VerifyZkAgeProofWithSourceAccount(
+            string sourceAccountId,
+            string contractId,
+            byte[] proof,
+            byte[] commitment,
+            uint minAge)
+        {
+            ValidateZkInputs(contractId, proof, commitment);
+            if (string.IsNullOrEmpty(sourceAccountId))
+                throw new ArgumentException("Source account ID cannot be null or empty.", nameof(sourceAccountId));
+
+            Server server = new(_serverUrl);
+            AccountResponse sourceAccount = await server.Accounts.Account(sourceAccountId);
+
+            var transactionBuilder = new SorobanTransactionBuilder(_network);
+            var transactionXdr = transactionBuilder.BuildVerifyZkAgeProofTransactionWithAccount(
+                sourceAccount: sourceAccount,
+                contractId: contractId,
+                proof: Convert.ToBase64String(proof),
+                commitment: Convert.ToBase64String(commitment),
+                minAge: minAge);
+
+            var rpcClient = GetRpcClient();
+            return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);
+        }
+
+        /// <summary>
+        /// Verifies a Bulletproofs ZK balance proof on-chain using a funded source account.
+        /// </summary>
+        public async Task<bool> VerifyZkBalanceProofWithSourceAccount(
+            string sourceAccountId,
+            string contractId,
+            byte[] proof,
+            byte[] commitment,
+            long requiredAmount)
+        {
+            ValidateZkInputs(contractId, proof, commitment);
+            if (string.IsNullOrEmpty(sourceAccountId))
+                throw new ArgumentException("Source account ID cannot be null or empty.", nameof(sourceAccountId));
+
+            Server server = new(_serverUrl);
+            AccountResponse sourceAccount = await server.Accounts.Account(sourceAccountId);
+
+            var transactionBuilder = new SorobanTransactionBuilder(_network);
+            var transactionXdr = transactionBuilder.BuildVerifyZkBalanceProofTransactionWithAccount(
+                sourceAccount: sourceAccount,
+                contractId: contractId,
+                proof: Convert.ToBase64String(proof),
+                commitment: Convert.ToBase64String(commitment),
+                requiredAmount: requiredAmount);
 
             var rpcClient = GetRpcClient();
             return await rpcClient.InvokeContractWithTransactionXdrAsync(transactionXdr);

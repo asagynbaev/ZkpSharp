@@ -11,10 +11,11 @@ Before you begin, ensure you have the following installed:
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
 
-2. **Soroban CLI**
+2. **Stellar CLI** (`stellar`; replaces the legacy `soroban-cli` crate)
    ```bash
-   cargo install --locked soroban-cli --features opt
+   cargo install --locked stellar-cli --features opt
    ```
+   See [install & setup](https://developers.stellar.org/docs/build/smart-contracts/getting-started/setup#install) and [CLI guides](https://developers.stellar.org/docs/smart-contracts/guides/cli).
 
 3. **wasm32 target**
    ```bash
@@ -42,7 +43,7 @@ target/wasm32-unknown-unknown/release/proof_balance.wasm
 Optimize the WASM file to reduce size and gas costs:
 
 ```bash
-soroban contract optimize \
+stellar contract optimize \
   --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm
 ```
 
@@ -57,32 +58,32 @@ target/wasm32-unknown-unknown/release/proof_balance_optimized.wasm
 
 ```bash
 # Configure Soroban CLI for testnet
-soroban network add \
+stellar network add \
   --global testnet \
   --rpc-url https://soroban-testnet.stellar.org \
   --network-passphrase "Test SDF Network ; September 2015"
 
 # Generate or import your account
-soroban keys generate --global alice --network testnet
+stellar keys generate --global alice --network testnet
 
 # Fund your account from the friendbot
-soroban keys fund alice --network testnet
+stellar keys fund alice --network testnet
 ```
 
 ### For Mainnet (Production)
 
 ```bash
 # Configure Soroban CLI for mainnet
-soroban network add \
+stellar network add \
   --global mainnet \
   --rpc-url https://soroban-rpc.mainnet.stellar.org \
   --network-passphrase "Public Global Stellar Network ; September 2015"
 
 # Import your funded account
-soroban keys add --global production-key --secret-key
+stellar keys add --global production-key --secret-key
 
 # Verify your account has sufficient XLM
-soroban keys address production-key
+stellar keys address production-key
 ```
 
 WARNING: Never commit or share your mainnet secret keys.
@@ -92,7 +93,7 @@ WARNING: Never commit or share your mainnet secret keys.
 ### Deploy to Testnet
 
 ```bash
-soroban contract deploy \
+stellar contract deploy \
   --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
   --source alice \
   --network testnet
@@ -108,7 +109,7 @@ CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ### Deploy to Mainnet
 
 ```bash
-soroban contract deploy \
+stellar contract deploy \
   --wasm target/wasm32-unknown-unknown/release/proof_balance_optimized.wasm \
   --source production-key \
   --network mainnet
@@ -124,7 +125,7 @@ export CONTRACT_ID="CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 # Prepare test data (example)
 # Note: You'll need to encode these properly as XDR
-soroban contract invoke \
+stellar contract invoke \
   --id $CONTRACT_ID \
   --source alice \
   --network testnet \
@@ -148,6 +149,9 @@ export ZKP_CONTRACT_ID="CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 # Set the HMAC key (same key used in the contract)
 export ZKP_HMAC_KEY="V0V3Mv4D1USxZYwWL4eG93m0JKdO9KbXQn0mhg+EXHc="
+
+# Funded G... account on this network (required for Soroban simulateTransaction envelope)
+export ZKP_SOURCE_ACCOUNT="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 ```
 
 ### appsettings.json (Alternative)
@@ -176,11 +180,13 @@ using ZkpSharp.Integration.Stellar;
 
 var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
 var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");
+// ZKP_SOURCE_ACCOUNT must be set for VerifyBalanceProof (or use VerifyBalanceProofWithSourceAccount)
 
 var zkp = new Zkp(new ProofProvider(hmacKey));
 var blockchain = new StellarBlockchain(
     "https://horizon-testnet.stellar.org",
-    "https://soroban-testnet.stellar.org"
+    "https://soroban-testnet.stellar.org",
+    hmacKey: hmacKey
 );
 
 // Generate proof
@@ -206,7 +212,7 @@ Console.WriteLine($"Proof verified: {isValid}");
 
 **Solution**: Make sure your account is funded. For testnet, use:
 ```bash
-soroban keys fund alice --network testnet
+stellar keys fund alice --network testnet
 ```
 
 ### Problem: "insufficient balance" error
@@ -238,7 +244,7 @@ To upgrade an existing contract:
 cargo build --target wasm32-unknown-unknown --release --package proof-balance
 
 # Install the new WASM
-soroban contract install \
+stellar contract install \
   --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
   --source alice \
   --network testnet
@@ -290,7 +296,7 @@ jobs:
           target: wasm32-unknown-unknown
       
       - name: Install Soroban CLI
-        run: cargo install --locked soroban-cli --features opt
+        run: cargo install --locked stellar-cli --features opt
       
       - name: Build Contract
         run: |
@@ -304,17 +310,18 @@ jobs:
       
       - name: Optimize WASM
         run: |
-          soroban contract optimize \
+          stellar contract optimize \
             --wasm contracts/stellar/target/wasm32-unknown-unknown/release/proof_balance.wasm
 ```
 
 ## Resources
 
-- [Soroban Documentation](https://soroban.stellar.org/docs)
+- [Smart contracts (Soroban)](https://developers.stellar.org/docs/smart-contracts)
+- [Stellar RPC (Soroban)](https://developers.stellar.org/network/soroban-rpc)
+- [Stellar CLI guides](https://developers.stellar.org/docs/smart-contracts/guides/cli)
 - [Stellar Documentation](https://developers.stellar.org/)
-- [Soroban CLI Reference](https://soroban.stellar.org/docs/reference/soroban-cli)
-- [Stellar Discord](https://discord.gg/stellar) - Get help from the community
-- [Soroban Quest](https://quest.stellar.org/soroban) - Interactive tutorials
+- [Stellar CLI repository](https://github.com/stellar/stellar-cli)
+- [Stellar Discord](https://discord.gg/stellar)
 
 ## Support
 

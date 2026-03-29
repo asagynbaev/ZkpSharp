@@ -23,7 +23,7 @@ help:
 setup:
 	@echo "Setting up development environment..."
 	@rustup target add wasm32-unknown-unknown
-	@cargo install --locked soroban-cli --features opt || echo "Soroban CLI already installed"
+	@cargo install --locked stellar-cli --features opt || echo "Stellar CLI already installed"
 	@echo "Setup complete"
 
 # Build contracts
@@ -49,7 +49,7 @@ clean:
 # Build and optimize contracts
 optimize: build
 	@echo "Optimizing contracts..."
-	@soroban contract optimize \
+	@stellar contract optimize \
 		--wasm target/wasm32-unknown-unknown/release/proof_balance.wasm
 	@echo "Optimization complete"
 	@echo "Optimized WASM:"
@@ -63,7 +63,7 @@ deploy-testnet: optimize
 		echo "Usage: make deploy-testnet SOURCE_ACCOUNT=alice"; \
 		exit 1; \
 	fi
-	@CONTRACT_ID=$$(soroban contract deploy \
+	@CONTRACT_ID=$$(stellar contract deploy \
 		--wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
 		--source $(SOURCE_ACCOUNT) \
 		--network testnet); \
@@ -89,7 +89,7 @@ deploy-mainnet: optimize
 		exit 1; \
 	fi
 	@echo "Deploying to Stellar mainnet..."
-	@CONTRACT_ID=$$(soroban contract deploy \
+	@CONTRACT_ID=$$(stellar contract deploy \
 		--wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
 		--source $(SOURCE_ACCOUNT) \
 		--network mainnet); \
@@ -107,7 +107,7 @@ fund-testnet:
 		exit 1; \
 	fi
 	@echo "Funding testnet account..."
-	@soroban keys fund $(ACCOUNT) --network testnet
+	@stellar keys fund $(ACCOUNT) --network testnet
 	@echo "Account funded"
 
 # Verify contract deployment
@@ -118,8 +118,8 @@ verify:
 		exit 1; \
 	fi
 	@echo "Verifying contract $(CONTRACT_ID)..."
-	@soroban contract info --id $(CONTRACT_ID) --network testnet || \
-		soroban contract info --id $(CONTRACT_ID) --network mainnet
+	@stellar contract info --id $(CONTRACT_ID) --network testnet || \
+		stellar contract info --id $(CONTRACT_ID) --network mainnet
 	@echo "Contract verified"
 
 # Lint code
@@ -150,7 +150,7 @@ install:
 		exit 1; \
 	fi
 	@echo "Installing contract WASM..."
-	@WASM_HASH=$$(soroban contract install \
+	@WASM_HASH=$$(stellar contract install \
 		--wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
 		--source $(SOURCE_ACCOUNT) \
 		--network testnet); \
