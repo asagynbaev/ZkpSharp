@@ -13,7 +13,7 @@
 //!   commitments. Structural validation and Fiat-Shamir binding checked on-chain;
 //!   full EC verification performed off-chain (Soroban lacks native secp256k1 ops).
 
-use soroban_sdk::{contract, contractimpl, crypto::Hash, Bytes, BytesN, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, Bytes, BytesN, Env, Symbol, Vec};
 
 /// Contract for verifying ZKP-based proofs using HMAC-SHA256.
 /// 
@@ -478,7 +478,7 @@ impl ZkpVerifier {
             }
         }
 
-        env.crypto().sha256(&input)
+        env.crypto().sha256(&input).into()
     }
 
     /// Read a little-endian u32 from proof bytes at the given offset.
@@ -517,16 +517,18 @@ impl ZkpVerifier {
         }
         inner_data.append(message);
         
-        let inner_hash = env.crypto().sha256(&inner_data);
+        let inner_bn: BytesN<32> = env.crypto().sha256(&inner_data).into();
 
         // Compute outer hash: H((K ⊕ opad) || inner_hash)
         let mut outer_data = Bytes::new(env);
         for i in 0..BLOCK_SIZE {
             outer_data.push_back(key_padded.get(i).unwrap() ^ OPAD);
         }
-        outer_data.append(&inner_hash.to_bytes());
+        for i in 0..32u32 {
+            outer_data.push_back(inner_bn.get(i).unwrap());
+        }
 
-        env.crypto().sha256(&outer_data)
+        env.crypto().sha256(&outer_data).into()
     }
 
     /// Performs constant-time comparison of two 32-byte hashes.
