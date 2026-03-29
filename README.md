@@ -288,6 +288,20 @@ The cryptographic core is functionally complete and covered by tests, but it has
 | On-chain verification | Full (HMAC recomputation) | Structural only (full EC off-chain) |
 | Best for | Fast checks, internal systems | Regulatory compliance, trustless scenarios |
 
+## Publishing to NuGet (maintainers)
+
+1. Commit and tag the release (e.g. `v2.2.0`), ensure `PackageVersion` in `ZkpSharp/ZkpSharp.csproj` matches.
+2. Build and pack: `dotnet pack ZkpSharp/ZkpSharp.csproj -c Release`
+3. Create an [API key](https://www.nuget.org/account/apikeys) on nuget.org with scope **Push** for package **ZkpSharp**.
+4. Push (replace `YOUR_API_KEY`):
+
+```bash
+dotnet nuget push ZkpSharp/bin/Release/ZkpSharp.*.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push ZkpSharp/bin/Release/ZkpSharp.*.snupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+```
+
+The NuGet badge in this README updates after indexing (usually within minutes).
+
 ## Contributing
 
 1. Fork the repository
