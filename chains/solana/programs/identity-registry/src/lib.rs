@@ -18,7 +18,11 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("ZkpId11111111111111111111111111111111111111");
+// Placeholder program ID. Before the first deploy run:
+//   solana-keygen new -o target/deploy/identity_registry-keypair.json --no-bip39-passphrase
+//   anchor keys sync                                          # writes the real pubkey here
+// `anchor build` validates that this matches the on-disk keypair.
+declare_id!("11111111111111111111111111111114");
 
 #[program]
 pub mod identity_registry {

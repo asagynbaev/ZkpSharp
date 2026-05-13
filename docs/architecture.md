@@ -45,66 +45,92 @@ issuer X registered as active?* It does no cryptographic proof verification.
 ```
 ZkpSharp/
 ├── src/
-│   ├── ZkpSharp.Core/                    DidId, Base58 — shared, dependency-free
-│   ├── ZkpSharp.Did/                     DidDocument, DidService, IDidStore, wallet binding, revocation
+│   ├── ZkpSharp.Core/                       DidId, Base58 — dependency-free
+│   ├── ZkpSharp.Did/                        DidDocument, DidService, IDidStore, wallet/channel binding, revocation
 │   ├── ZkpSharp.Did.Tests/
-│   ├── ZkpSharp.Attestations/            Attestation, AttestationIssuer, MerkleTree, AttestationVerifier,
-│   │                                     PresentationVerifier, IIssuerRegistry
+│   ├── ZkpSharp.Attestations/               Attestations + Merkle + PresentationVerifier + CredentialProof
 │   ├── ZkpSharp.Attestations.Tests/
-│   └── ZkpSharp.Chains.Abstractions/     IChainAnchor + state types — chain-agnostic
+│   ├── ZkpSharp.Cryptography/               secp256k1, Pedersen, Bulletproofs (pure C#)
+│   ├── ZkpSharp.Signing/                    Ed25519 over NSec (libsodium)
+│   ├── ZkpSharp.Signing.Tests/
+│   ├── ZkpSharp.EntityFrameworkCore/        EF Core IDidStore + IIssuerRegistry (any relational provider)
+│   ├── ZkpSharp.EntityFrameworkCore.Tests/
+│   ├── ZkpSharp.Chains.Abstractions/        IChainAnchor + state types — chain-agnostic
+│   ├── ZkpSharp.Chains.Solana/              Solana adapter (Solnet, identity-registry program)
+│   ├── ZkpSharp.Chains.Solana.Tests/
+│   ├── ZkpSharp.Chains.Stellar/             Stellar adapter scaffold (StellarDotnetSdk, Soroban)
+│   ├── ZkpSharp.Sdk/                        ZkpHolder, ZkpIssuer, ZkpVerifier facades
+│   └── ZkpSharp.Sdk.Tests/
 │
 ├── chains/
-│   ├── solana/                           Anchor IdentityRegistry program (primary)
+│   ├── solana/                              Anchor IdentityRegistry program (primary)
 │   │   ├── Anchor.toml
 │   │   ├── Cargo.toml
 │   │   └── programs/identity-registry/
-│   └── stellar/                          Existing Soroban work (secondary)
+│   └── stellar/                             Soroban attestation-verifier (secondary)
 │       ├── Cargo.toml
 │       └── contracts/attestation-verifier/
 │
-├── ZkpSharp/                             v2 monolith — published as NuGet 2.x
-│   ├── Core/Zkp.cs                       HMAC equality, [Obsolete]
-│   ├── Crypto/                           secp256k1 + Bulletproofs (kept; moves to Cryptography pkg at v3)
-│   ├── Privacy/CredentialProof.cs        Real ZK selective disclosure (moves to Attestations at v3)
-│   ├── Integration/Stellar/              Existing client (moves to Chains.Stellar at v3)
-│   └── Interfaces/IBlockchain.cs         [Obsolete]
-│
-├── ZkpSharp.Tests/                       Tests for the v2 monolith
+├── ZkpSharp/                                v2.x monolith — meta-package referencing the splits
+├── ZkpSharp.Tests/                          Tests for the legacy monolith APIs
 │
 ├── examples/
-│   ├── PrivacyApps/                      ConfidentialTransfer, SealedBidAuction, PrivateVoting
+│   ├── PrivacyApps/                         ConfidentialTransfer, SealedBidAuction, PrivateVoting
 │   └── PrivacyApps.Tests/
 │
 └── docs/
-    └── architecture.md                   ← this file
+    └── architecture.md                      ← this file
 ```
 
 ## Packages and dependencies
 
 ```
-                     ┌───────────────────────┐
-                     │   ZkpSharp.Core       │  (DidId, Base58)
-                     └────────┬──────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-┌───────▼─────────┐  ┌────────▼─────────┐  ┌────────▼──────────────┐
-│  ZkpSharp.Did   │  │ ZkpSharp.        │  │ ZkpSharp.Chains.      │
-│                 │  │ Attestations     │  │ Abstractions          │
-└─────────────────┘  └──────────────────┘  └─────────┬─────────────┘
-                                                     │
-                                          ┌──────────┴──────────┐
-                                          │                     │
-                                ┌─────────▼────────┐  ┌─────────▼────────┐
-                                │ ZkpSharp.Chains. │  │ ZkpSharp.Chains. │
-                                │ Solana (TODO)    │  │ Stellar (TODO)   │
-                                └──────────────────┘  └──────────────────┘
+                            ┌───────────────────────┐
+                            │   ZkpSharp.Core       │
+                            └────────┬──────────────┘
+                                     │
+                ┌────────────────────┼────────────────────────┐
+                │                    │                        │
+        ┌───────▼─────────┐  ┌───────▼────────────┐  ┌────────▼──────────────┐
+        │  ZkpSharp.Did   │  │ ZkpSharp.          │  │ ZkpSharp.             │
+        │                 │  │ Attestations       │  │ Cryptography          │
+        └────────┬────────┘  └─────────┬──────────┘  └───────────────────────┘
+                 │                     │                       ▲
+                 │                     │                       │
+                 │             ┌───────┴───────┐               │
+                 │             │               │               │
+                 │             │   used by ZkpSharp.Attestations.CredentialProof
+                 │             │
+                 │      ┌──────▼─────────────────┐
+                 └──────► ZkpSharp.Signing       │  (Ed25519, NSec)
+                        └────────────────────────┘
+                                                  
+        ┌───────────────────────────┐
+        │ ZkpSharp.                 │
+        │ Chains.Abstractions       │  (IChainAnchor)
+        └─────────────┬─────────────┘
+                      │
+            ┌─────────┴──────────┐
+            │                    │
+   ┌────────▼─────────┐  ┌───────▼──────────┐
+   │ ZkpSharp.Chains. │  │ ZkpSharp.Chains. │
+   │ Solana           │  │ Stellar          │
+   └──────────────────┘  └──────────────────┘
+
+        ┌────────────────────────────────────┐
+        │ ZkpSharp.EntityFrameworkCore       │  (EF Core stores; depends on Did + Attestations)
+        └────────────────────────────────────┘
+
+        ┌────────────────────────────────────┐
+        │ ZkpSharp.Sdk                       │  (Holder/Issuer/Verifier facades; depends on
+        └────────────────────────────────────┘   Did, Attestations, Chains.Abstractions)
 ```
 
 Hard invariants:
 - `Core` has zero external dependencies and zero references to chains or crypto stacks.
-- `Did` and `Attestations` reference only `Core`. They never know which chain backs anchoring.
+- `Did` and `Attestations` reference only `Core` (+ `Cryptography` for CredentialProof). They never know which chain backs anchoring.
 - Chain adapter packages implement `IChainAnchor` from `Chains.Abstractions`.
+- `Sdk` is the consumer-facing surface; lower-level packages stay accessible for advanced use.
 
 ## DID method
 
@@ -151,12 +177,19 @@ See `docs/threat-model.md` (TODO) for detail. Headline risks:
 4. **Replay across verifiers / DIDs / chains.** Mitigation: every presentation is bound to
    `{verifier, session_nonce, as_of_revocation_epoch, chain}`.
 
-## What still has to move (v3 cut)
+## v3 cut — done
 
-- `ZkpSharp/Crypto/*` → `src/ZkpSharp.Cryptography/`.
-- `ZkpSharp/Integration/Stellar/*` → `src/ZkpSharp.Chains.Stellar/` (implementing `IChainAnchor`).
-- `ZkpSharp/Privacy/CredentialProof.cs` → `src/ZkpSharp.Attestations/` (as the predicate-proof primitive).
-- `ZkpSharp/Core/Zkp.cs` + `ZkpSharp/Interfaces/IBlockchain.cs` → deleted.
+All planned moves from the v2 monolith have been completed:
+
+- `ZkpSharp/Crypto/*` → `src/ZkpSharp.Cryptography/` ✅
+- `ZkpSharp/Integration/Stellar/*` → `src/ZkpSharp.Chains.Stellar/` (scaffold; anchor contract pending) ✅
+- `ZkpSharp/Privacy/CredentialProof.cs` → `src/ZkpSharp.Attestations/` ✅
+- `ZkpSharp/Core/Zkp.cs` + `ZkpSharp/Interfaces/IBlockchain.cs` → deleted ✅
+
+Net adds beyond the original plan:
+- `ZkpSharp.Signing` — production Ed25519 (no more BYO-crypto delegate)
+- `ZkpSharp.EntityFrameworkCore` — Postgres / SQL Server / SQLite stores
+- `ZkpSharp.Sdk` — high-level Holder/Issuer/Verifier facades
 - New: `src/ZkpSharp.Chains.Solana/` — C# adapter against the Anchor program.
 
 The v3 cut is a breaking release. Until then, both layouts coexist and tests cover both.

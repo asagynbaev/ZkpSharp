@@ -10,15 +10,19 @@
     <Description>Solana implementation of IChainAnchor. Drives the chains/solana/programs/identity-registry Anchor program via Solnet.</Description>
   </PropertyGroup>
 
-  <!--
-    Add Solnet when ready:
-    <PackageReference Include="Solnet.Rpc" Version="0.7.9" />
-    <PackageReference Include="Solnet.Wallet" Version="0.7.9" />
-    <PackageReference Include="Solnet.Programs" Version="0.7.9" />
-  -->
+  <ItemGroup>
+    <PackageReference Include="Solnet.Rpc" Version="6.1.0" />
+    <PackageReference Include="Solnet.Wallet" Version="6.1.0" />
+    <PackageReference Include="Solnet.Programs" Version="6.1.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ZkpSharp.Chains.Abstractions\ZkpSharp.Chains.Abstractions.csproj" />
+    <ProjectReference Include="..\ZkpSharp.Core\ZkpSharp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZkpSharp.Chains.Solana.Tests" />
   </ItemGroup>
 
 </Project>

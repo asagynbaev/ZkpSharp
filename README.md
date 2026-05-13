@@ -1,9 +1,9 @@
 # ZkpSharp
 
 Privacy-preserving identity and reputation infrastructure for .NET. DIDs, signed
-attestations, selective disclosure via Merkle bundles, and Bulletproof-based
-predicate proofs over committed values. Multi-chain anchoring with Solana as the
-primary target and Stellar as a secondary backend.
+attestations, selective disclosure via Merkle bundles, Bulletproof-based predicate
+proofs over committed values, and multi-chain anchoring (Solana primary, Stellar
+secondary).
 
 [![NuGet](https://img.shields.io/nuget/v/ZkpSharp)](https://www.nuget.org/packages/ZkpSharp)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ZkpSharp)](https://www.nuget.org/packages/ZkpSharp)
@@ -14,9 +14,9 @@ primary target and Stellar as a secondary backend.
 ## What this is for
 
 - Binding humans to decentralized identifiers (`did:zkp:...`).
-- Issuing and verifying generic attestations: humanity, phone, wallet control,
+- Issuing and verifying generic attestations — humanity, phone, wallet control,
   region, reputation score, agent identity.
-- Producing presentations a holder can hand to a verifier — Merkle inclusion plus
+- Producing presentations a holder can hand to a verifier: Merkle inclusion plus
   selective predicate proofs over committed values.
 - Anchoring attestation roots and revocation epochs on-chain without writing any
   identity data on-chain.
@@ -28,135 +28,199 @@ primary target and Stellar as a secondary backend.
 - Not a prediction-market or DeFi library.
 - Not a research-only cryptography experiment.
 
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `ZkpSharp.Sdk` | **Entry point for most consumers.** High-level `ZkpHolder`, `ZkpIssuer`, `ZkpVerifier` facades. |
+| `ZkpSharp.Core` | `DidId`, `Base58`. Zero external dependencies. |
+| `ZkpSharp.Did` | `DidDocument`, `DidService`, `IDidStore`, wallet/channel binding, revocation. |
+| `ZkpSharp.Attestations` | `Attestation`, `AttestationIssuer`, `MerkleTree`, `AttestationVerifier`, `PresentationVerifier`, `IIssuerRegistry`, `CredentialProof`. |
+| `ZkpSharp.Cryptography` | Pure-C# secp256k1, Pedersen commitments, Bulletproofs (no external deps). |
+| `ZkpSharp.Signing` | Production Ed25519 (NSec / libsodium). Drop-in `Ed25519Verifier` and `Ed25519IssuerSigner`. |
+| `ZkpSharp.EntityFrameworkCore` | EF Core `IDidStore` and `IIssuerRegistry` over any relational provider (Postgres, SQL Server, SQLite). |
+| `ZkpSharp.Chains.Abstractions` | `IChainAnchor` — chain-agnostic anchor interface. |
+| `ZkpSharp.Chains.Solana` | Solana adapter targeting the `identity-registry` Anchor program. |
+| `ZkpSharp.Chains.Stellar` | Stellar adapter scaffold targeting a Soroban anchor contract. |
+
 ## Repository layout
 
 ```
 ZkpSharp/
 ├── src/
-│   ├── ZkpSharp.Core/                 DidId, Base58 — cross-cutting types
-│   ├── ZkpSharp.Did/                  DidDocument, DidService, IDidStore
-│   ├── ZkpSharp.Attestations/         Issuer, MerkleTree, AttestationVerifier,
-│   │                                  PresentationVerifier, IIssuerRegistry
-│   └── ZkpSharp.Chains.Abstractions/  IChainAnchor — chain-agnostic interface
+│   ├── ZkpSharp.Core/                    DidId, Base58
+│   ├── ZkpSharp.Did/                     DID model + service
+│   ├── ZkpSharp.Attestations/            Attestations + Merkle + CredentialProof
+│   ├── ZkpSharp.Cryptography/            secp256k1 + Bulletproofs
+│   ├── ZkpSharp.Signing/                 Ed25519 (NSec)
+│   ├── ZkpSharp.EntityFrameworkCore/     Postgres/SQL Server/SQLite stores
+│   ├── ZkpSharp.Chains.Abstractions/     IChainAnchor
+│   ├── ZkpSharp.Chains.Solana/           Solana adapter (Solnet)
+│   ├── ZkpSharp.Chains.Stellar/          Stellar adapter scaffold
+│   └── ZkpSharp.Sdk/                     ZkpHolder, ZkpIssuer, ZkpVerifier
 │
 ├── chains/
-│   ├── solana/                        Anchor IdentityRegistry program (primary)
-│   └── stellar/                       Soroban attestation-verifier (secondary)
+│   ├── solana/programs/identity-registry/   Anchor program (primary)
+│   └── stellar/contracts/attestation-verifier/  Soroban contract (secondary)
 │
-├── ZkpSharp/                          v2 monolith (NuGet 2.x); v3 will split it
-├── examples/PrivacyApps/              ConfidentialTransfer, SealedBidAuction, PrivateVoting
+├── ZkpSharp/                             v2.x monolith — kept for backward compat
+├── examples/PrivacyApps/                 ConfidentialTransfer, SealedBidAuction, PrivateVoting
 └── docs/architecture.md
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the full layout, package
-dependency rules, and the on-chain / off-chain boundary.
+See [docs/architecture.md](docs/architecture.md) for the on-chain/off-chain
+boundary and the package dependency rules.
 
 ## Quick start
 
-### Create a DID
+The SDK is the entry point. The three facades cover the three roles in any
+attestation flow: holder, issuer, verifier.
+
+### Install
+
+```bash
+dotnet add package ZkpSharp.Sdk
+dotnet add package ZkpSharp.Signing
+# pick the chain adapter you need:
+dotnet add package ZkpSharp.Chains.Solana
+# pick a store (or use the in-memory one for tests):
+dotnet add package ZkpSharp.EntityFrameworkCore
+```
+
+### Holder side — create a DID, accept an attestation, present it
 
 ```csharp
+using ZkpSharp.Sdk;
+using ZkpSharp.Signing;
 using ZkpSharp.Did;
 
-var store = new InMemoryDidStore();
-var verifier = new Ed25519SignatureVerifier(YourEd25519VerifyImpl);
-var service = new DidService(store, verifier);
+// One-time keypair for the human/agent who controls this DID.
+var (controllerPriv, controllerPub) = Ed25519.GenerateKeypair();
 
-// controllerPublicKey is the 32-byte Ed25519 key you control
-var doc = await service.CreateAsync(controllerPublicKey);
-// doc.Id == "did:zkp:<base58(sha256(pubkey||\"v1\"))>"
+var holder = await ZkpHolder.CreateAsync(controllerPub, new ZkpHolderOptions
+{
+    Store              = new InMemoryDidStore(),     // or EfCoreDidStore for Postgres
+    SignatureVerifier  = new Ed25519Verifier(),
+    ChainAnchor        = solanaAnchor,                // optional; null = offline mode
+});
+
+// `holder.Did` is "did:zkp:<base58(sha256(pubkey||"v1"))>" — deterministic, not chosen.
+
+// Later: accept an issuer-signed attestation, anchor the new root on-chain.
+holder.AcceptAttestation(attestationFromIssuer);
+await holder.AnchorRootAsync();
+
+// Build a presentation for a relying app, disclosing only what it needs.
+var presentation = holder.BuildPresentation(
+    verifier:             new DidId("did:zkp:my-relying-app"),
+    attestationTypes:     new[] { "phone_verified" },
+    sessionNonce:         RandomBytes(16),
+    asOfRevocationEpoch:  0,
+    chain:                "solana",
+    holderSignature:      walletSignatureOverBinding);
 ```
 
-### Bind a wallet
+### Issuer side — sign attestations, publish your key
 
 ```csharp
-var challenge = DidService.BuildWalletChallenge(doc.Id, new WalletBindingRequest {
-    Chain    = "solana",
-    Address  = walletAddress,
-    WalletPublicKey = walletPubkey,
-    Nonce    = RandomNonce(),
-    Expiry   = DateTimeOffset.UtcNow.AddMinutes(5),
-    Signature = Array.Empty<byte>(),
-});
-var sig = SignWithWallet(challenge);                   // your wallet signs the canonical challenge
-await service.BindWalletAsync(doc.Id, request with { Signature = sig });
+using var signer = new Ed25519IssuerSigner(issuerPrivateKey);
+var issuer = new ZkpIssuer(new DidId("did:zkp:my-issuer-service"), signer);
+
+var attestation = issuer.Issue(
+    type:     AttestationTypes.PhoneVerified,
+    subject:  subjectDid,
+    payload:  new AttestationPayload { Method = "twilio_v2" },
+    validity: TimeSpan.FromDays(365));
+
+// Register yourself once so verifiers can find you:
+await issuerRegistry.RegisterAsync(issuer.BuildRegistryRecord(
+    schemaUri: "https://schemas.zkp/attestation/v1"));
 ```
 
-### Issue and verify an attestation
+### Verifier side — check a presentation against a policy
+
+```csharp
+var zkp = new ZkpVerifier(new ZkpVerifierOptions
+{
+    IssuerRegistry     = issuerRegistry,
+    SignatureVerifier  = new Ed25519Verifier(),
+    ChainAnchor        = solanaAnchor,
+});
+
+var result = await zkp.VerifyPresentationAsync(presentation, new VerificationPolicy
+{
+    ExpectedVerifier              = new DidId("did:zkp:my-relying-app"),
+    ExpectedSessionNonce          = nonceIssuedAtSessionStart,
+    RequireCurrentRevocationEpoch = true,
+});
+
+if (!result.Valid)
+    return Unauthorized(result.Reason);   // e.g. "verifier_mismatch", "revocation_stale"
+```
+
+### Predicate proof over a committed attestation value
+
+For attestations carrying a Pedersen commitment, the holder proves a predicate
+(e.g. `score ≥ 700`) without revealing the score. Bulletproofs on secp256k1,
+implemented from scratch:
 
 ```csharp
 using ZkpSharp.Attestations;
 
-var signer = new YourEd25519IssuerSigner(issuerPrivateKey);
-var issuer = new AttestationIssuer(issuerDid, signer);
-
-var att = issuer.Issue(
-    AttestationTypes.HumanVerified,
-    subject:  subjectDid,
-    payload:  new AttestationPayload { Method = "humanity_check_v2" },
-    validity: TimeSpan.FromDays(365));
-
-// Verifier side
-var registry = new InMemoryIssuerRegistry();           // or a chain-backed registry
-registry.Register(new IssuerRecord {
-    Did = issuerDid, PublicKey = issuerPubkey,
-    Algorithm = "ed25519", SchemaUri = att.Schema, Active = true,
-});
-var attVerifier = new AttestationVerifier(registry, sigVerifier);
-var result = await attVerifier.VerifyAsync(att);       // result.Valid == true
-```
-
-### Bundle into a Merkle tree and present selectively
-
-```csharp
-var bundle = new AttestationBundle(new[] { att1, att2, att3 });
-// Anchor bundle.Root on chain via IChainAnchor
-
-// Verifier later asks for just one attestation
-var disclosure = bundle.DisclosureFor(0);
-var presentation = new Presentation {
-    Holder       = subjectDid,
-    Disclosures  = new[] { disclosure },
-    Binding      = new PresentationBinding { /* ... session, chain, signature ... */ },
-};
-var presentationVerifier = new PresentationVerifier(attVerifier);
-var verified = await presentationVerifier.VerifyAsync(presentation, expectedRootFromChain);
-```
-
-### Predicate proof over a committed value
-
-For attestations that carry a Pedersen commitment, the holder can prove a
-predicate (e.g. `score ≥ 700`) without revealing the score. This uses the
-existing Bulletproofs implementation:
-
-```csharp
-using ZkpSharp.Privacy;
-
 var cp = new CredentialProof();
 var bundle = cp.ProveMinimum(actualValue: 85_000, minimumRequired: 50_000, label: "annual_income");
-bool valid = cp.Verify(bundle);
+bool valid = cp.Verify(bundle);  // verifier learns only "income >= 50,000"
+```
+
+## Storage
+
+`IDidStore` and `IIssuerRegistry` are pluggable. Two implementations ship:
+
+- `InMemoryDidStore` / `InMemoryIssuerRegistry` — for tests and offline dev.
+- `EfCoreDidStore` / `EfCoreIssuerRegistry` — EF Core 8, provider-agnostic.
+
+Postgres example:
+
+```csharp
+services.AddDbContext<ZkpSharpDbContext>(opts =>
+    opts.UseNpgsql(connectionString));
+
+services.AddScoped<IDidStore, EfCoreDidStore>();
+services.AddScoped<IIssuerRegistry, EfCoreIssuerRegistry>();
+services.AddSingleton<ISignatureVerifier, Ed25519Verifier>();
+```
+
+Generate migrations against your chosen provider:
+```bash
+dotnet ef migrations add InitialZkpSharp --project ZkpSharp.EntityFrameworkCore
 ```
 
 ## Chains
 
-- **Solana (primary)** — `chains/solana/programs/identity-registry/`. A minimal Anchor
-  program: `register_did`, `update_root`, `bump_revocation`, `register_issuer`. No
-  proof verification on-chain; verification stays in C#.
-- **Stellar (secondary)** — `chains/stellar/contracts/attestation-verifier/`. The
-  Soroban contract previously known as `proof-balance`. Kept as a working secondary
-  anchor; will be ported to the same `IChainAnchor` shape in v3.
+The on-chain layer stores **only** Merkle attestation roots and revocation epochs.
+DID documents, attestations, and proofs are never written on-chain.
 
-## Migration to v3
+| Chain | Status | Code |
+|---|---|---|
+| **Solana** | Adapter complete; program needs deployment | [`chains/solana/programs/identity-registry/`](chains/solana/programs/identity-registry/) |
+| **Stellar** | Adapter scaffold; anchor contract pending | [`chains/stellar/contracts/attestation-verifier/`](chains/stellar/contracts/attestation-verifier/) |
 
-The package is being split. v2.x consumers continue to work; v3 is a breaking cut.
+The Solana adapter speaks to a minimal Anchor program with four instructions:
+`register_did`, `update_root`, `bump_revocation`, `register_issuer`. Off-chain
+verification stays in C#.
+
+## v2 → v3
+
+v3 is a breaking cut from the v2.x monolith. v2.x consumers keep working until
+they upgrade.
 
 | v2 type | v3 replacement |
 |---|---|
 | `ZkpSharp.Core.Zkp` (HMAC equality) | Removed. Use `CredentialProof` for ZK predicates. |
 | `ZkpSharp.Interfaces.IBlockchain` | `ZkpSharp.Chains.IChainAnchor`. |
-| `ZkpSharp.Integration.Stellar.*` | `ZkpSharp.Chains.Stellar` (TODO). |
-| `ZkpSharp.Crypto.*` | `ZkpSharp.Cryptography` (TODO). |
-| `ZkpSharp.Privacy.CredentialProof` | `ZkpSharp.Attestations` (TODO). |
+| `ZkpSharp.Integration.Stellar.*` | `ZkpSharp.Chains.Stellar`. |
+| `ZkpSharp.Crypto.*` | `ZkpSharp.Cryptography`. |
+| `ZkpSharp.Privacy.CredentialProof` | `ZkpSharp.Attestations.CredentialProof`. |
 
 ## License
 

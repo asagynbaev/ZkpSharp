@@ -168,6 +168,79 @@ public sealed class DidService
         return ms.ToArray();
     }
 
+    /// <summary>
+    /// Attach a channel binding (phone, email, Telegram, etc.) to the DID document.
+    /// The commitment is opaque to this service — callers compute it externally (typically
+    /// via <c>ChannelBindingService</c>) using a pepper held outside the library.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Multiple bindings of the same type are allowed (e.g. two phone numbers). To remove
+    /// or replace a binding, use <see cref="RemoveChannelBindingAsync"/> first.
+    /// </para>
+    /// <para>
+    /// This method bumps the DID document version. The on-chain attestation root is NOT
+    /// touched — that's a separate operation via <c>IChainAnchor.AnchorRootAsync</c> once
+    /// the new root is computed.
+    /// </para>
+    /// </remarks>
+    public async Task<DidDocument> AddChannelBindingAsync(
+        DidId did,
+        ChannelBinding binding,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        if (binding.Commitment is null || binding.Commitment.Length == 0)
+            throw new ArgumentException("Channel binding commitment must not be empty.", nameof(binding));
+
+        var doc = await GetRequiredAsync(did, ct).ConfigureAwait(false);
+        if (doc.Revoked)
+            throw new InvalidOperationException($"DID is revoked: {did}.");
+
+        var updated = doc with
+        {
+            Bindings = doc.Bindings.Append(binding).ToArray(),
+            Version = doc.Version + 1,
+            UpdatedAt = _clock.GetUtcNow(),
+        };
+        await _store.SaveAsync(updated, ct).ConfigureAwait(false);
+        return updated;
+    }
+
+    /// <summary>
+    /// Remove a channel binding by type + commitment. Returns the updated document, or the
+    /// unmodified one if no matching binding was found.
+    /// </summary>
+    public async Task<DidDocument> RemoveChannelBindingAsync(
+        DidId did,
+        string channelType,
+        ReadOnlyMemory<byte> commitment,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(channelType);
+
+        var doc = await GetRequiredAsync(did, ct).ConfigureAwait(false);
+        if (doc.Revoked)
+            throw new InvalidOperationException($"DID is revoked: {did}.");
+
+        var commitmentArray = commitment.ToArray();
+        var filtered = doc.Bindings
+            .Where(b => !(b.Type == channelType && b.Commitment.AsSpan().SequenceEqual(commitmentArray)))
+            .ToArray();
+
+        if (filtered.Length == doc.Bindings.Count)
+            return doc;
+
+        var updated = doc with
+        {
+            Bindings = filtered,
+            Version = doc.Version + 1,
+            UpdatedAt = _clock.GetUtcNow(),
+        };
+        await _store.SaveAsync(updated, ct).ConfigureAwait(false);
+        return updated;
+    }
+
     private async Task<DidDocument> GetRequiredAsync(DidId did, CancellationToken ct)
     {
         var doc = await _store.GetAsync(did, ct).ConfigureAwait(false);
