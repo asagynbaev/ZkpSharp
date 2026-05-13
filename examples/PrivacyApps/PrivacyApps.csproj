@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>ZkpSharp.Examples.PrivacyApps</RootNamespace>
+    <AssemblyName>ZkpSharp.Examples.PrivacyApps</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ZkpSharp\ZkpSharp.csproj" />
+  </ItemGroup>
+
+</Project>

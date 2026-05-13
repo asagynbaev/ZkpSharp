@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ZkpSharp.Core</RootNamespace>
+    <AssemblyName>ZkpSharp.Core</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Core models and interfaces for ZkpSharp identity infrastructure: DID, attestations, presentations. No crypto, no chain dependencies.</Description>
+  </PropertyGroup>
+
+</Project>

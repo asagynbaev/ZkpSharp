@@ -8,6 +8,7 @@ obj/
 .vscode/
 # Mac-specific
 .DS_Store
+.claude
 
 # Windows-specific
 Thumbs.db

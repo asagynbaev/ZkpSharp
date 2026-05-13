@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: contracts/stellar
+        working-directory: chains/stellar
 
     steps:
       - name: Checkout code
@@ -48,8 +48,8 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Build proof-balance WASM (release)
-        run: cargo build --target wasm32-unknown-unknown --release -p proof-balance
+      - name: Build attestation-verifier WASM (release)
+        run: cargo build --target wasm32-unknown-unknown --release -p attestation-verifier
 
       - name: Run Rust contract tests
-        run: cargo test -p proof-balance
+        run: cargo test -p attestation-verifier

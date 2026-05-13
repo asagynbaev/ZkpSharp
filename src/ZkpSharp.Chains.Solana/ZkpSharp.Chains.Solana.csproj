@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ZkpSharp.Chains.Solana</RootNamespace>
+    <AssemblyName>ZkpSharp.Chains.Solana</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Solana implementation of IChainAnchor. Drives the chains/solana/programs/identity-registry Anchor program via Solnet.</Description>
+  </PropertyGroup>
+
+  <!--
+    Add Solnet when ready:
+    <PackageReference Include="Solnet.Rpc" Version="0.7.9" />
+    <PackageReference Include="Solnet.Wallet" Version="0.7.9" />
+    <PackageReference Include="Solnet.Programs" Version="0.7.9" />
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZkpSharp.Chains.Abstractions\ZkpSharp.Chains.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ZkpSharp.Did</RootNamespace>
+    <AssemblyName>ZkpSharp.Did</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>DID document creation, wallet binding, signature verification, revocation. Off-chain. Storage-agnostic via IDidStore.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZkpSharp.Core\ZkpSharp.Core.csproj" />
+  </ItemGroup>
+
+</Project>

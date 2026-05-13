@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>2.2.0</PackageVersion>
+    <PackageVersion>3.0.0</PackageVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/asagynbaev/ZkpSharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/asagynbaev/ZkpSharp</RepositoryUrl>
@@ -14,20 +14,26 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Azimbek Sagynbaev</Authors>
-    <Description>Production-ready .NET library for Zero-Knowledge Proofs with real Bulletproofs on secp256k1 implemented from scratch in pure C#. Features Pedersen commitments, inner product arguments, Fiat-Shamir transcripts, HMAC-based privacy proofs, and Stellar Soroban blockchain integration.</Description>
-    <PackageTags>zkp;zero-knowledge-proof;bulletproofs;cryptography;privacy;blockchain;stellar;soroban;smart-contracts;secp256k1;hmac;pedersen-commitment;range-proof;inner-product-argument</PackageTags>
-    <PackageReleaseNotes>v2.2.0: Soroban RPC simulateTransaction parsing (results[0].xdr), full TX envelopes for all Verify* paths via ZKP_SOURCE_ACCOUNT or *WithSourceAccount, ZK WithAccount builders, optional testnet smoke tests, Stellar CLI docs refresh, soroban-sdk 25.3. See CHANGELOG.md.</PackageReleaseNotes>
+    <Description>Privacy-preserving identity and reputation infrastructure for .NET. DIDs, attestations, selective disclosure via Merkle bundles, and Bulletproof predicate proofs over committed values. v3 meta-package — references ZkpSharp.Core, ZkpSharp.Did, ZkpSharp.Attestations, ZkpSharp.Cryptography, ZkpSharp.Chains.Abstractions.</Description>
+    <PackageTags>zkp;did;attestations;bulletproofs;cryptography;privacy;identity;reputation;secp256k1;pedersen-commitment;range-proof;solana;stellar</PackageTags>
+    <PackageReleaseNotes>v3.0.0 (breaking): Split into focused packages. Added DID layer (ZkpSharp.Did), generic attestations with Merkle bundling (ZkpSharp.Attestations), Bulletproofs library (ZkpSharp.Cryptography), chain-agnostic anchor interface (ZkpSharp.Chains.Abstractions), Solana and Stellar adapters. Removed HMAC Zkp class and IBlockchain interface.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-     <None Include="../README.md" Pack="true" PackagePath="/" />
+    <None Include="../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
+  <!--
+    v3 meta-package: pull in sub-packages so consumers can add a single
+    <PackageReference Include="ZkpSharp" Version="3.*" /> and get everything.
+    Chain adapters are opt-in (separate packages, not included here).
+  -->
   <ItemGroup>
-    <PackageReference Include="stellar-dotnet-sdk" Version="14.0.1" />
-    <PackageReference Include="stellar-dotnet-sdk-xdr" Version="14.0.1" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <ProjectReference Include="..\src\ZkpSharp.Core\ZkpSharp.Core.csproj" />
+    <ProjectReference Include="..\src\ZkpSharp.Did\ZkpSharp.Did.csproj" />
+    <ProjectReference Include="..\src\ZkpSharp.Attestations\ZkpSharp.Attestations.csproj" />
+    <ProjectReference Include="..\src\ZkpSharp.Cryptography\ZkpSharp.Cryptography.csproj" />
+    <ProjectReference Include="..\src\ZkpSharp.Chains.Abstractions\ZkpSharp.Chains.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

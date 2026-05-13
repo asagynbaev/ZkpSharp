@@ -101,7 +101,7 @@ bool valid = zkProvider.VerifyRange(proof, commitment, 0, 100);
 
 3. Recompile and redeploy Rust contract:
 ```bash
-cd contracts/stellar
+cd chains/stellar
 cargo build --release --target wasm32-unknown-unknown
 ```
 

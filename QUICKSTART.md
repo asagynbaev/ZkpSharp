@@ -230,12 +230,12 @@ var restored = cred.Deserialize(serialized);
 ### Deploy the Soroban contract
 
 ```bash
-cd contracts/stellar
+cd chains/stellar
 rustup target add wasm32-unknown-unknown
-cargo build --target wasm32-unknown-unknown --release --package proof-balance
+cargo build --target wasm32-unknown-unknown --release --package attestation-verifier
 
 soroban contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/proof_balance.wasm \
+  --wasm target/wasm32-unknown-unknown/release/attestation_verifier.wasm \
   --source <YOUR_SECRET_KEY> \
   --network testnet
 ```
@@ -342,6 +342,6 @@ bool result = await rpcClient.InvokeContractWithTransactionXdrAsync(zkXdr);
 ## Next steps
 
 - [README.md](README.md) -- Full API reference and architecture overview
-- [contracts/stellar/DEPLOYMENT.md](contracts/stellar/DEPLOYMENT.md) -- Detailed contract deployment guide
+- [chains/stellar/DEPLOYMENT.md](chains/stellar/DEPLOYMENT.md) -- Detailed contract deployment guide
 - [STELLAR_REALITY_CHECK.md](STELLAR_REALITY_CHECK.md) -- Capabilities and limitations
 - [CHANGELOG.md](CHANGELOG.md) -- Version history
