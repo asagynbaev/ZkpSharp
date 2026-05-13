@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Chains.Solana</RootNamespace>
+    <AssemblyName>Tessera.Chains.Solana</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Solana implementation of IChainAnchor. Drives the chains/solana/programs/identity-registry Anchor program via Solnet.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Solnet.Rpc" Version="6.1.0" />
+    <PackageReference Include="Solnet.Wallet" Version="6.1.0" />
+    <PackageReference Include="Solnet.Programs" Version="6.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Chains.Abstractions\Tessera.Chains.Abstractions.csproj" />
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tessera.Chains.Solana.Tests" />
+  </ItemGroup>
+
+</Project>

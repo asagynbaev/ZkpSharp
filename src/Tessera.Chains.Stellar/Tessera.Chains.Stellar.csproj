@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Chains.Stellar</RootNamespace>
+    <AssemblyName>Tessera.Chains.Stellar</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Stellar/Soroban implementation of IChainAnchor. Anchors attestation roots and revocation epochs via a Soroban contract.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="stellar-dotnet-sdk" Version="14.0.1" />
+    <PackageReference Include="stellar-dotnet-sdk-xdr" Version="14.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Chains.Abstractions\Tessera.Chains.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

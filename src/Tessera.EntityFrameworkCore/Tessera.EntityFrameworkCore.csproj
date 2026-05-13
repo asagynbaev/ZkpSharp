@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.EntityFrameworkCore</RootNamespace>
+    <AssemblyName>Tessera.EntityFrameworkCore</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>EF Core implementations of IDidStore and IIssuerRegistry. Provider-agnostic (relational only) — consumer chooses Npgsql/SqlServer/Sqlite at composition root.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+    <ProjectReference Include="..\Tessera.Did\Tessera.Did.csproj" />
+    <ProjectReference Include="..\Tessera.Attestations\Tessera.Attestations.csproj" />
+  </ItemGroup>
+
+</Project>

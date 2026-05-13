@@ -1,6 +1,6 @@
 # Solana — IdentityRegistry
 
-Primary chain backend for the ZkpSharp identity layer. The on-chain program is
+Primary chain backend for the Tessera identity layer. The on-chain program is
 deliberately minimal: it anchors Merkle attestation roots and revocation epochs
 keyed by DID hash. No proof verification, no balances, no reputation logic.
 
@@ -50,5 +50,5 @@ The program ID is a placeholder (`ZkpId1111...`); generate a real keypair before
 
 ## C# client
 
-The C# implementation of `IChainAnchor` for Solana lives at `src/ZkpSharp.Chains.Solana/`
+The C# implementation of `IChainAnchor` for Solana lives at `src/Tessera.Chains.Solana/`
 (not yet created — Week 3 of the migration roadmap).

@@ -1,6 +1,6 @@
 # Stellar (secondary chain)
 
-Soroban contract that ZkpSharp uses as its **secondary** anchor target. Solana is primary
+Soroban contract that Tessera uses as its **secondary** anchor target. Solana is primary
 (see [`../solana/`](../solana/)); Stellar exists because the original v2 codebase shipped
 a working Soroban integration and there is no reason to throw away working code.
 
@@ -9,7 +9,7 @@ a working Soroban integration and there is no reason to throw away working code.
 | Component | State |
 |---|---|
 | `contracts/attestation-verifier/` | Working contract from v2.x. Verifies HMAC and Bulletproof-structure on-chain. Kept for backward compatibility with v2.x consumers. |
-| C# adapter `ZkpSharp.Chains.Stellar` | Scaffolded against `IChainAnchor` but the dedicated anchor contract for storing roots/epochs has not been written yet. The C# side is wired; the Rust contract for anchor-state needs to be added. |
+| C# adapter `Tessera.Chains.Stellar` | Scaffolded against `IChainAnchor` but the dedicated anchor contract for storing roots/epochs has not been written yet. The C# side is wired; the Rust contract for anchor-state needs to be added. |
 
 If you need on-chain anchoring of DID roots **today**, use the Solana adapter.
 Stellar will reach parity when the anchor contract lands.
@@ -24,7 +24,7 @@ It performs:
 - **Bulletproof structural validation** — checks compressed-point prefixes and IPA length;
   emits a transcript-binding hash for off-chain auditing. Soroban does not natively
   support secp256k1 EC math, so full Bulletproof verification **must** run off-chain via
-  `ZkpSharp.Attestations.CredentialProof.Verify`.
+  `Tessera.Attestations.CredentialProof.Verify`.
 
 It is **not** the DID anchor contract — that is a separate contract that will live next
 to it once written.
@@ -51,4 +51,4 @@ To reach parity with Solana:
    - `bump_revocation(did_hash, reason)` → increment epoch
    - `register_issuer(issuer_did_hash, schema_uri)` → register issuer
 2. Mirror the Solana data layout (32-byte `did_hash`, 32-byte `attestation_root`, `u64` epoch, owner pubkey).
-3. Fill in the `NotImplementedException` paths in [`../../src/ZkpSharp.Chains.Stellar/StellarChainAnchor.cs`](../../src/ZkpSharp.Chains.Stellar/StellarChainAnchor.cs) to invoke the new contract via Soroban RPC.
+3. Fill in the `NotImplementedException` paths in [`../../src/Tessera.Chains.Stellar/StellarChainAnchor.cs`](../../src/Tessera.Chains.Stellar/StellarChainAnchor.cs) to invoke the new contract via Soroban RPC.

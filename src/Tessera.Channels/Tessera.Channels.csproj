@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Channels</RootNamespace>
+    <AssemblyName>Tessera.Channels</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Off-chain channel binding: HKDF-based commitments over phone numbers, email, Telegram handles. Pepper held outside the library (KMS / Key Vault). Used to bind low-entropy identifiers to a DID without storing the raw handle.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+  </ItemGroup>
+
+</Project>

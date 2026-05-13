@@ -1,8 +1,8 @@
-using ZkpSharp.Crypto;
-using ZkpSharp.Crypto.Bulletproofs;
-using ZkpSharp.Crypto.Secp256k1;
+using Tessera.Crypto;
+using Tessera.Crypto.Bulletproofs;
+using Tessera.Crypto.Secp256k1;
 
-namespace ZkpSharp.Examples.PrivacyApps
+namespace Tessera.Examples.PrivacyApps
 {
     /// <summary>
     /// Confidential transfers: hide the amount being transferred while proving

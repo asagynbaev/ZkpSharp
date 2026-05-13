@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Core</RootNamespace>
+    <AssemblyName>Tessera.Core</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Core models and interfaces for Tessera identity infrastructure: DID, attestations, presentations. No crypto, no chain dependencies.</Description>
+  </PropertyGroup>
+
+</Project>

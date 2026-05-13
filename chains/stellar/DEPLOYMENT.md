@@ -139,7 +139,7 @@ stellar contract invoke \
 
 ## Step 6: Configure Your C# Application
 
-After deployment, configure your ZkpSharp application:
+After deployment, configure your Tessera application:
 
 ### Environment Variables
 
@@ -163,7 +163,7 @@ export ZKP_SOURCE_ACCOUNT="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     "HorizonUrl": "https://horizon-testnet.stellar.org",
     "SorobanRpcUrl": "https://soroban-testnet.stellar.org"
   },
-  "ZkpSharp": {
+  "Tessera": {
     "HmacKey": "V0V3Mv4D1USxZYwWL4eG93m0JKdO9KbXQn0mhg+EXHc="
   }
 }
@@ -174,9 +174,9 @@ export ZKP_SOURCE_ACCOUNT="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 Create a simple test application:
 
 ```csharp
-using ZkpSharp.Core;
-using ZkpSharp.Security;
-using ZkpSharp.Integration.Stellar;
+using Tessera.Core;
+using Tessera.Security;
+using Tessera.Integration.Stellar;
 
 var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
 var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");

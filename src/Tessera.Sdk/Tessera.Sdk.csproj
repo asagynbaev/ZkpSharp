@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Sdk</RootNamespace>
+    <AssemblyName>Tessera.Sdk</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>High-level facades for Tessera: ZkpHolder, ZkpIssuer, ZkpVerifier. The entry point most consumers should use.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+    <ProjectReference Include="..\Tessera.Did\Tessera.Did.csproj" />
+    <ProjectReference Include="..\Tessera.Attestations\Tessera.Attestations.csproj" />
+    <ProjectReference Include="..\Tessera.Chains.Abstractions\Tessera.Chains.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

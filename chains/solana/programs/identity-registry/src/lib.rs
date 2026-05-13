@@ -1,10 +1,10 @@
 //! # IdentityRegistry
 //!
-//! Minimal on-chain anchor for the ZkpSharp identity layer.
+//! Minimal on-chain anchor for the Tessera identity layer.
 //!
 //! Only commitment roots and revocation epochs live here. DID documents, attestations,
 //! reputation scores, and any user-facing data stay off-chain. This program does not
-//! verify proofs — verification is performed off-chain by holders of `ZkpSharp.Proofs`.
+//! verify proofs — verification is performed off-chain by holders of `Tessera.Proofs`.
 //!
 //! Instructions:
 //! - `register_did`     : create a new DID anchor account (rent-paid by owner).

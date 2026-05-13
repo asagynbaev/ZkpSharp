@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Signing</RootNamespace>
+    <AssemblyName>Tessera.Signing</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Production Ed25519 signing/verification for Tessera. Wraps NSec.Cryptography (libsodium) and implements ISignatureVerifier and IIssuerSigner so consumers do not need to bring their own crypto.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Did\Tessera.Did.csproj" />
+    <ProjectReference Include="..\Tessera.Attestations\Tessera.Attestations.csproj" />
+  </ItemGroup>
+
+</Project>

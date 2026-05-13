@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Chains</RootNamespace>
+    <AssemblyName>Tessera.Chains.Abstractions</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>Chain-agnostic interfaces for anchoring attestation roots and revocation state. Implemented by Tessera.Chains.Solana and Tessera.Chains.Stellar.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+  </ItemGroup>
+
+</Project>

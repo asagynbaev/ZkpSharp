@@ -5,12 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <RootNamespace>ZkpSharp.Examples.PrivacyApps</RootNamespace>
-    <AssemblyName>ZkpSharp.Examples.PrivacyApps</AssemblyName>
+    <RootNamespace>Tessera.Examples.PrivacyApps</RootNamespace>
+    <AssemblyName>Tessera.Examples.PrivacyApps</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ZkpSharp\ZkpSharp.csproj" />
+    <ProjectReference Include="..\..\Tessera\Tessera.csproj" />
   </ItemGroup>
 
 </Project>

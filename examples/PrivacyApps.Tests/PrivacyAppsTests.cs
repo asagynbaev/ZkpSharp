@@ -1,7 +1,7 @@
 using Xunit;
-using ZkpSharp.Examples.PrivacyApps;
+using Tessera.Examples.PrivacyApps;
 
-namespace ZkpSharp.Examples.PrivacyApps.Tests
+namespace Tessera.Examples.PrivacyApps.Tests
 {
     public class ConfidentialTransferTests
     {

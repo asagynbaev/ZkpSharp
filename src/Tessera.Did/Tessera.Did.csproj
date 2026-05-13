@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tessera.Did</RootNamespace>
+    <AssemblyName>Tessera.Did</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <Description>DID document creation, wallet binding, signature verification, revocation. Off-chain. Storage-agnostic via IDidStore.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tessera.Core\Tessera.Core.csproj" />
+  </ItemGroup>
+
+</Project>

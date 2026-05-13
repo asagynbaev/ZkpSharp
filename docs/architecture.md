@@ -43,24 +43,24 @@ issuer X registered as active?* It does no cryptographic proof verification.
 ## Repository layout
 
 ```
-ZkpSharp/
+Tessera/
 ├── src/
-│   ├── ZkpSharp.Core/                       DidId, Base58 — dependency-free
-│   ├── ZkpSharp.Did/                        DidDocument, DidService, IDidStore, wallet/channel binding, revocation
-│   ├── ZkpSharp.Did.Tests/
-│   ├── ZkpSharp.Attestations/               Attestations + Merkle + PresentationVerifier + CredentialProof
-│   ├── ZkpSharp.Attestations.Tests/
-│   ├── ZkpSharp.Cryptography/               secp256k1, Pedersen, Bulletproofs (pure C#)
-│   ├── ZkpSharp.Signing/                    Ed25519 over NSec (libsodium)
-│   ├── ZkpSharp.Signing.Tests/
-│   ├── ZkpSharp.EntityFrameworkCore/        EF Core IDidStore + IIssuerRegistry (any relational provider)
-│   ├── ZkpSharp.EntityFrameworkCore.Tests/
-│   ├── ZkpSharp.Chains.Abstractions/        IChainAnchor + state types — chain-agnostic
-│   ├── ZkpSharp.Chains.Solana/              Solana adapter (Solnet, identity-registry program)
-│   ├── ZkpSharp.Chains.Solana.Tests/
-│   ├── ZkpSharp.Chains.Stellar/             Stellar adapter scaffold (StellarDotnetSdk, Soroban)
-│   ├── ZkpSharp.Sdk/                        ZkpHolder, ZkpIssuer, ZkpVerifier facades
-│   └── ZkpSharp.Sdk.Tests/
+│   ├── Tessera.Core/                       DidId, Base58 — dependency-free
+│   ├── Tessera.Did/                        DidDocument, DidService, IDidStore, wallet/channel binding, revocation
+│   ├── Tessera.Did.Tests/
+│   ├── Tessera.Attestations/               Attestations + Merkle + PresentationVerifier + CredentialProof
+│   ├── Tessera.Attestations.Tests/
+│   ├── Tessera.Cryptography/               secp256k1, Pedersen, Bulletproofs (pure C#)
+│   ├── Tessera.Signing/                    Ed25519 over NSec (libsodium)
+│   ├── Tessera.Signing.Tests/
+│   ├── Tessera.EntityFrameworkCore/        EF Core IDidStore + IIssuerRegistry (any relational provider)
+│   ├── Tessera.EntityFrameworkCore.Tests/
+│   ├── Tessera.Chains.Abstractions/        IChainAnchor + state types — chain-agnostic
+│   ├── Tessera.Chains.Solana/              Solana adapter (Solnet, identity-registry program)
+│   ├── Tessera.Chains.Solana.Tests/
+│   ├── Tessera.Chains.Stellar/             Stellar adapter scaffold (StellarDotnetSdk, Soroban)
+│   ├── Tessera.Sdk/                        ZkpHolder, ZkpIssuer, ZkpVerifier facades
+│   └── Tessera.Sdk.Tests/
 │
 ├── chains/
 │   ├── solana/                              Anchor IdentityRegistry program (primary)
@@ -71,8 +71,8 @@ ZkpSharp/
 │       ├── Cargo.toml
 │       └── contracts/attestation-verifier/
 │
-├── ZkpSharp/                                v2.x monolith — meta-package referencing the splits
-├── ZkpSharp.Tests/                          Tests for the legacy monolith APIs
+├── Tessera/                                v2.x monolith — meta-package referencing the splits
+├── Tessera.Tests/                          Tests for the legacy monolith APIs
 │
 ├── examples/
 │   ├── PrivacyApps/                         ConfidentialTransfer, SealedBidAuction, PrivateVoting
@@ -86,43 +86,43 @@ ZkpSharp/
 
 ```
                             ┌───────────────────────┐
-                            │   ZkpSharp.Core       │
+                            │   Tessera.Core       │
                             └────────┬──────────────┘
                                      │
                 ┌────────────────────┼────────────────────────┐
                 │                    │                        │
         ┌───────▼─────────┐  ┌───────▼────────────┐  ┌────────▼──────────────┐
-        │  ZkpSharp.Did   │  │ ZkpSharp.          │  │ ZkpSharp.             │
+        │  Tessera.Did   │  │ Tessera.          │  │ Tessera.             │
         │                 │  │ Attestations       │  │ Cryptography          │
         └────────┬────────┘  └─────────┬──────────┘  └───────────────────────┘
                  │                     │                       ▲
                  │                     │                       │
                  │             ┌───────┴───────┐               │
                  │             │               │               │
-                 │             │   used by ZkpSharp.Attestations.CredentialProof
+                 │             │   used by Tessera.Attestations.CredentialProof
                  │             │
                  │      ┌──────▼─────────────────┐
-                 └──────► ZkpSharp.Signing       │  (Ed25519, NSec)
+                 └──────► Tessera.Signing       │  (Ed25519, NSec)
                         └────────────────────────┘
                                                   
         ┌───────────────────────────┐
-        │ ZkpSharp.                 │
+        │ Tessera.                 │
         │ Chains.Abstractions       │  (IChainAnchor)
         └─────────────┬─────────────┘
                       │
             ┌─────────┴──────────┐
             │                    │
    ┌────────▼─────────┐  ┌───────▼──────────┐
-   │ ZkpSharp.Chains. │  │ ZkpSharp.Chains. │
+   │ Tessera.Chains. │  │ Tessera.Chains. │
    │ Solana           │  │ Stellar          │
    └──────────────────┘  └──────────────────┘
 
         ┌────────────────────────────────────┐
-        │ ZkpSharp.EntityFrameworkCore       │  (EF Core stores; depends on Did + Attestations)
+        │ Tessera.EntityFrameworkCore       │  (EF Core stores; depends on Did + Attestations)
         └────────────────────────────────────┘
 
         ┌────────────────────────────────────┐
-        │ ZkpSharp.Sdk                       │  (Holder/Issuer/Verifier facades; depends on
+        │ Tessera.Sdk                       │  (Holder/Issuer/Verifier facades; depends on
         └────────────────────────────────────┘   Did, Attestations, Chains.Abstractions)
 ```
 
@@ -137,7 +137,7 @@ Hard invariants:
 DIDs are derived from the controller key, not chosen by the holder:
 
 ```
-did:zkp:<base58(sha256(pubkey || "v1"))>
+did:tessera:<base58(sha256(pubkey || "v1"))>
 ```
 
 `DidService.CreateAsync` enforces this. The caller cannot pick the identifier — this
@@ -181,15 +181,15 @@ See `docs/threat-model.md` (TODO) for detail. Headline risks:
 
 All planned moves from the v2 monolith have been completed:
 
-- `ZkpSharp/Crypto/*` → `src/ZkpSharp.Cryptography/` ✅
-- `ZkpSharp/Integration/Stellar/*` → `src/ZkpSharp.Chains.Stellar/` (scaffold; anchor contract pending) ✅
-- `ZkpSharp/Privacy/CredentialProof.cs` → `src/ZkpSharp.Attestations/` ✅
-- `ZkpSharp/Core/Zkp.cs` + `ZkpSharp/Interfaces/IBlockchain.cs` → deleted ✅
+- `Tessera/Crypto/*` → `src/Tessera.Cryptography/` ✅
+- `Tessera/Integration/Stellar/*` → `src/Tessera.Chains.Stellar/` (scaffold; anchor contract pending) ✅
+- `Tessera/Privacy/CredentialProof.cs` → `src/Tessera.Attestations/` ✅
+- `Tessera/Core/Zkp.cs` + `Tessera/Interfaces/IBlockchain.cs` → deleted ✅
 
 Net adds beyond the original plan:
-- `ZkpSharp.Signing` — production Ed25519 (no more BYO-crypto delegate)
-- `ZkpSharp.EntityFrameworkCore` — Postgres / SQL Server / SQLite stores
-- `ZkpSharp.Sdk` — high-level Holder/Issuer/Verifier facades
-- New: `src/ZkpSharp.Chains.Solana/` — C# adapter against the Anchor program.
+- `Tessera.Signing` — production Ed25519 (no more BYO-crypto delegate)
+- `Tessera.EntityFrameworkCore` — Postgres / SQL Server / SQLite stores
+- `Tessera.Sdk` — high-level Holder/Issuer/Verifier facades
+- New: `src/Tessera.Chains.Solana/` — C# adapter against the Anchor program.
 
 The v3 cut is a breaking release. Until then, both layouts coexist and tests cover both.
