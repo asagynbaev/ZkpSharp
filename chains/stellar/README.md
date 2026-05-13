@@ -1,8 +1,8 @@
-# Stellar (secondary chain)
+# Stellar anchor
 
-Soroban contract that Tessera uses as its **secondary** anchor target. Solana is primary
-(see [`../solana/`](../solana/)); Stellar exists because the original v2 codebase shipped
-a working Soroban integration and there is no reason to throw away working code.
+Soroban contract for anchoring DID roots on Stellar. Tessera is chain-agnostic — any
+network that implements `IChainAnchor` is a first-class anchor target. The Solana adapter
+is complete; the Stellar adapter is in progress (anchor contract not yet written).
 
 ## Status
 
@@ -12,7 +12,8 @@ a working Soroban integration and there is no reason to throw away working code.
 | C# adapter `Tessera.Chains.Stellar` | Scaffolded against `IChainAnchor` but the dedicated anchor contract for storing roots/epochs has not been written yet. The C# side is wired; the Rust contract for anchor-state needs to be added. |
 
 If you need on-chain anchoring of DID roots **today**, use the Solana adapter.
-Stellar will reach parity when the anchor contract lands.
+Stellar reaches full parity when the anchor contract lands — at that point both adapters
+are interchangeable and you pick the network at registration time.
 
 ## What the existing `attestation-verifier` contract does
 

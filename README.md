@@ -2,8 +2,8 @@
 
 Privacy-preserving identity and reputation infrastructure for .NET. DIDs, signed
 attestations, selective disclosure via Merkle bundles, Bulletproof-based predicate
-proofs over committed values, and multi-chain anchoring (Solana primary, Stellar
-secondary).
+proofs over committed values, and multi-chain anchoring — chain-agnostic by design.
+Plug in any network by implementing `IChainAnchor`. Solana and Stellar adapters included.
 
 [![NuGet](https://img.shields.io/nuget/v/Tessera)](https://www.nuget.org/packages/Tessera)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Tessera)](https://www.nuget.org/packages/Tessera)
@@ -60,8 +60,8 @@ Tessera/
 │   └── Tessera.Sdk/                     Holder, Issuer, Verifier
 │
 ├── chains/
-│   ├── solana/programs/identity-registry/   Anchor program (primary)
-│   └── stellar/contracts/attestation-verifier/  Soroban contract (secondary)
+│   ├── solana/programs/identity-registry/   Anchor program (adapter: complete)
+│   └── stellar/contracts/attestation-verifier/  Soroban contract (adapter: in progress)
 │
 ├── Tessera/                             v2.x monolith — kept for backward compat
 ├── examples/PrivacyApps/                 ConfidentialTransfer, SealedBidAuction, PrivateVoting

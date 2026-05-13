@@ -7,7 +7,8 @@ Privacy-preserving identity and reputation infrastructure for our own product. C
 - A DID layer where one human → one DID, multi-wallet, multi-channel.
 - Generic attestation envelopes (issuer-signed, type-tagged, expiring).
 - Selective-disclosure presentations with Merkle inclusion proofs.
-- A minimal on-chain anchor — Merkle root + revocation epoch — Solana primary, Stellar secondary.
+- A minimal on-chain anchor — Merkle root + revocation epoch — chain-agnostic via `IChainAnchor`.
+  Solana adapter complete; Stellar adapter in progress.
 - A from-scratch Bulletproofs-on-secp256k1 library, used for selective disclosure
   over committed values.
 
@@ -63,11 +64,11 @@ Tessera/
 │   └── Tessera.Sdk.Tests/
 │
 ├── chains/
-│   ├── solana/                              Anchor IdentityRegistry program (primary)
+│   ├── solana/                              Anchor IdentityRegistry program (adapter: complete)
 │   │   ├── Anchor.toml
 │   │   ├── Cargo.toml
 │   │   └── programs/identity-registry/
-│   └── stellar/                             Soroban attestation-verifier (secondary)
+│   └── stellar/                             Soroban attestation-verifier (adapter: in progress)
 │       ├── Cargo.toml
 │       └── contracts/attestation-verifier/
 │

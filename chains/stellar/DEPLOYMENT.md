@@ -1,8 +1,8 @@
 # Soroban attestation-verifier deployment
 
-How to build and deploy the `attestation-verifier` Soroban contract — Tessera's
-**secondary** anchor target. For the primary (Solana) flow see
-[`docs/deploying-solana.md`](../../docs/deploying-solana.md).
+How to build and deploy the `attestation-verifier` Soroban contract on Stellar.
+Tessera is chain-agnostic — any network is an equal anchor target. For the Solana
+adapter flow see [`docs/deploying-solana.md`](../../docs/deploying-solana.md).
 
 This contract verifies HMAC-based proofs and runs structural validation of
 Bulletproof envelopes on-chain. Full Bulletproofs EC verification stays
