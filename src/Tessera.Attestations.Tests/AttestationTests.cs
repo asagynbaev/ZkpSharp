@@ -50,7 +50,7 @@ public class AttestationTests
             Did = issuerDid,
             PublicKey = pub,
             Algorithm = algorithm,
-            SchemaUri = "https://schemas.zkp/attestation/v1",
+            SchemaUri = "https://schemas.tessera/attestation/v1",
             Active = true,
         };
         var registry = new InMemoryIssuerRegistry();
@@ -83,7 +83,7 @@ public class AttestationTests
         var subject = new DidId("did:tessera:subject1");
         var att = issuer.Issue("phone_verified", subject, new AttestationPayload { Method = "twilio_v1" });
 
-        var tampered = att with { Schema = "https://schemas.zkp/attestation/v9999" };
+        var tampered = att with { Schema = "https://schemas.tessera/attestation/v9999" };
         var result = await verifier.VerifyAsync(tampered);
         Assert.False(result.Valid);
         Assert.Equal("bad_signature", result.Reason);
@@ -96,7 +96,7 @@ public class AttestationTests
         var otherIssuer = new DidId("did:tessera:totally-different");
         var bogus = new Attestation
         {
-            Schema = "https://schemas.zkp/attestation/v1",
+            Schema = "https://schemas.tessera/attestation/v1",
             Type = "human_verified",
             Issuer = otherIssuer,
             Subject = new DidId("did:tessera:subject"),

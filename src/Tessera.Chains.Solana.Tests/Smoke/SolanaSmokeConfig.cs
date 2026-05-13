@@ -10,9 +10,9 @@ namespace Tessera.Chains.Solana.Tests.Smoke;
 /// <remarks>
 /// Required env vars:
 /// <list type="bullet">
-///   <item><c>ZKP_SOLANA_RPC</c>: RPC URL, e.g. <c>https://api.devnet.solana.com</c></item>
-///   <item><c>ZKP_SOLANA_PROGRAM_ID</c>: base58 program ID of the deployed identity-registry</item>
-///   <item><c>ZKP_SOLANA_PAYER_KEYPAIR</c>: filesystem path to a Solana CLI JSON keypair file (64-byte array)</item>
+///   <item><c>TESSERA_SOLANA_RPC</c>: RPC URL, e.g. <c>https://api.devnet.solana.com</c></item>
+///   <item><c>TESSERA_SOLANA_PROGRAM_ID</c>: base58 program ID of the deployed identity-registry</item>
+///   <item><c>TESSERA_SOLANA_PAYER_KEYPAIR</c>: filesystem path to a Solana CLI JSON keypair file (64-byte array)</item>
 /// </list>
 /// </remarks>
 internal sealed class SolanaSmokeConfig
@@ -25,24 +25,24 @@ internal sealed class SolanaSmokeConfig
     {
         config = null;
 
-        var rpc = Environment.GetEnvironmentVariable("ZKP_SOLANA_RPC");
+        var rpc = Environment.GetEnvironmentVariable("TESSERA_SOLANA_RPC");
         if (string.IsNullOrWhiteSpace(rpc))
         {
-            missingReason = "ZKP_SOLANA_RPC not set (e.g. https://api.devnet.solana.com).";
+            missingReason = "TESSERA_SOLANA_RPC not set (e.g. https://api.devnet.solana.com).";
             return false;
         }
 
-        var programId = Environment.GetEnvironmentVariable("ZKP_SOLANA_PROGRAM_ID");
+        var programId = Environment.GetEnvironmentVariable("TESSERA_SOLANA_PROGRAM_ID");
         if (string.IsNullOrWhiteSpace(programId))
         {
-            missingReason = "ZKP_SOLANA_PROGRAM_ID not set (deployed identity-registry pubkey).";
+            missingReason = "TESSERA_SOLANA_PROGRAM_ID not set (deployed identity-registry pubkey).";
             return false;
         }
 
-        var keypairPath = Environment.GetEnvironmentVariable("ZKP_SOLANA_PAYER_KEYPAIR");
+        var keypairPath = Environment.GetEnvironmentVariable("TESSERA_SOLANA_PAYER_KEYPAIR");
         if (string.IsNullOrWhiteSpace(keypairPath))
         {
-            missingReason = "ZKP_SOLANA_PAYER_KEYPAIR not set (path to Solana CLI JSON keypair file).";
+            missingReason = "TESSERA_SOLANA_PAYER_KEYPAIR not set (path to Solana CLI JSON keypair file).";
             return false;
         }
 

@@ -140,14 +140,14 @@ await issuerRegistry.RegisterAsync(issuer.BuildRegistryRecord(
 ### Verifier side — check a presentation against a policy
 
 ```csharp
-var zkp = new Verifier(new VerifierOptions
+var verifier = new Verifier(new VerifierOptions
 {
     IssuerRegistry     = issuerRegistry,
     SignatureVerifier  = new Ed25519Verifier(),
     ChainAnchor        = solanaAnchor,
 });
 
-var result = await zkp.VerifyPresentationAsync(presentation, new VerificationPolicy
+var result = await verifier.VerifyPresentationAsync(presentation, new VerificationPolicy
 {
     ExpectedVerifier              = new DidId("did:tessera:my-relying-app"),
     ExpectedSessionNonce          = nonceIssuedAtSessionStart,

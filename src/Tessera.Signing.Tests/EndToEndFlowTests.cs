@@ -59,7 +59,7 @@ public class EndToEndFlowTests
             Did = issuerDid,
             PublicKey = issuerSigner.PublicKey,
             Algorithm = issuerSigner.Algorithm,
-            SchemaUri = "https://schemas.zkp/attestation/v1",
+            SchemaUri = "https://schemas.tessera/attestation/v1",
             Active = true,
         });
 
@@ -121,7 +121,7 @@ public class EndToEndFlowTests
             Did = issuerDid,
             PublicKey = issuerSigner.PublicKey,
             Algorithm = "ed25519",
-            SchemaUri = "https://schemas.zkp/attestation/v1",
+            SchemaUri = "https://schemas.tessera/attestation/v1",
             Active = true,
         });
 

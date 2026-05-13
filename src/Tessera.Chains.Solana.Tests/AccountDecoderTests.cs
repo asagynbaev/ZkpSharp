@@ -61,7 +61,7 @@ public class AccountDecoderTests
     {
         var didHash = FilledBytes(20, 32);
         var signingKey = FilledBytes(80, 32);
-        var schemaUri = "https://schemas.zkp/attestation/v1";
+        var schemaUri = "https://schemas.tessera/attestation/v1";
 
         var raw = Concat(
             IdentityRegistryDiscriminators.IssuerAccount,

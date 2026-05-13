@@ -72,9 +72,9 @@ var bytes = JsonSerializer.Deserialize<byte[]>(File.ReadAllText(keypairPath));
 The devnet smoke tests in [`src/Tessera.Chains.Solana.Tests/Smoke/`](../src/Tessera.Chains.Solana.Tests/Smoke/) are gated by three environment variables and skipped otherwise — they will not run in CI by default.
 
 ```bash
-export ZKP_SOLANA_RPC="https://api.devnet.solana.com"
-export ZKP_SOLANA_PROGRAM_ID="<deployed program pubkey>"
-export ZKP_SOLANA_PAYER_KEYPAIR="$HOME/.config/solana/zkp-devnet.json"
+export TESSERA_SOLANA_RPC="https://api.devnet.solana.com"
+export TESSERA_SOLANA_PROGRAM_ID="<deployed program pubkey>"
+export TESSERA_SOLANA_PAYER_KEYPAIR="$HOME/.config/solana/zkp-devnet.json"
 
 dotnet test src/Tessera.Chains.Solana.Tests \
     --filter "FullyQualifiedName~Smoke.SolanaDevnetSmokeTests"

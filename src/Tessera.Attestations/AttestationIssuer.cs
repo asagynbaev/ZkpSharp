@@ -29,7 +29,7 @@ public sealed class AttestationIssuer
         DidId subject,
         AttestationPayload payload,
         TimeSpan? validity = null,
-        string schema = "https://schemas.zkp/attestation/v1")
+        string schema = "https://schemas.tessera/attestation/v1")
     {
         ArgumentException.ThrowIfNullOrEmpty(type);
         ArgumentNullException.ThrowIfNull(payload);

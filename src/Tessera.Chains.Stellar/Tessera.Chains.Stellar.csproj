@@ -13,6 +13,14 @@
   <ItemGroup>
     <PackageReference Include="stellar-dotnet-sdk" Version="14.0.1" />
     <PackageReference Include="stellar-dotnet-sdk-xdr" Version="14.0.1" />
+
+    <!--
+      Override vulnerable transitive deps pulled in by stellar-dotnet-sdk.
+      GHSA-7jgj-8wvc-jh57 (System.Net.Http < 4.3.4)
+      GHSA-cmhx-cq75-c4mj (System.Text.RegularExpressions < 4.3.1)
+    -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>

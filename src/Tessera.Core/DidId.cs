@@ -18,7 +18,7 @@ public readonly record struct DidId(string Value)
     {
         var did = new DidId(value);
         if (!did.IsWellFormed)
-            throw new FormatException($"Not a well-formed did:zkp identifier: '{value}'.");
+            throw new FormatException($"Not a well-formed did:tessera identifier: '{value}'.");
         return did;
     }
 }

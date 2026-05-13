@@ -7,7 +7,7 @@
     <RootNamespace>Tessera.Sdk</RootNamespace>
     <AssemblyName>Tessera.Sdk</AssemblyName>
     <IsPackable>false</IsPackable>
-    <Description>High-level facades for Tessera: ZkpHolder, ZkpIssuer, ZkpVerifier. The entry point most consumers should use.</Description>
+    <Description>High-level facades for Tessera: Holder, Issuer, Verifier. The entry point most consumers should use.</Description>
   </PropertyGroup>
 
   <ItemGroup>

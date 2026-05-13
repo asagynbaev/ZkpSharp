@@ -15,7 +15,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Azimbek Sagynbaev</Authors>
     <Description>Privacy-preserving identity and reputation infrastructure for .NET. DIDs, attestations, selective disclosure via Merkle bundles, and Bulletproof predicate proofs over committed values. v3 meta-package — references Tessera.Core, Tessera.Did, Tessera.Attestations, Tessera.Cryptography, Tessera.Chains.Abstractions.</Description>
-    <PackageTags>zkp;did;attestations;bulletproofs;cryptography;privacy;identity;reputation;secp256k1;pedersen-commitment;range-proof;solana;stellar</PackageTags>
+    <PackageTags>did;decentralized-identity;verifiable-credentials;attestations;selective-disclosure;identity;reputation;privacy;bulletproofs;zero-knowledge-proof;pedersen-commitment;range-proof;secp256k1;solana;stellar;dotnet</PackageTags>
     <PackageReleaseNotes>v3.0.0 (breaking): Split into focused packages. Added DID layer (Tessera.Did), generic attestations with Merkle bundling (Tessera.Attestations), Bulletproofs library (Tessera.Cryptography), chain-agnostic anchor interface (Tessera.Chains.Abstractions), Solana and Stellar adapters. Removed HMAC Zkp class and IBlockchain interface.</PackageReleaseNotes>
   </PropertyGroup>
 

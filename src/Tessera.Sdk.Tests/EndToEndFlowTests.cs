@@ -27,7 +27,7 @@ public class EndToEndFlowTests
         using var issuerSigner = new Ed25519IssuerSigner(issuerPriv);
         var issuer = new Issuer(new DidId("did:tessera:issuer-app"), issuerSigner);
 
-        registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.zkp/attestation/v1"));
+        registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.tessera/attestation/v1"));
 
         // ── holder side ─────────────────────────────────────────────────────
         var (_, holderPub) = Ed25519.GenerateKeypair();
@@ -289,7 +289,7 @@ public class EndToEndFlowTests
         var (issuerPriv, _) = Ed25519.GenerateKeypair();
         var issuerSigner = new Ed25519IssuerSigner(issuerPriv);
         var issuer = new Issuer(new DidId("did:tessera:flow-issuer"), issuerSigner);
-        registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.zkp/attestation/v1"));
+        registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.tessera/attestation/v1"));
 
         var (_, holderPub) = Ed25519.GenerateKeypair();
         var holder = await Holder.CreateAsync(holderPub, new HolderOptions

@@ -1,6 +1,12 @@
-# Soroban ZKP Contract Deployment Guide
+# Soroban attestation-verifier deployment
 
-This guide will walk you through deploying the ZKP Verifier smart contract to the Stellar network using Soroban.
+How to build and deploy the `attestation-verifier` Soroban contract — Tessera's
+**secondary** anchor target. For the primary (Solana) flow see
+[`docs/deploying-solana.md`](../../docs/deploying-solana.md).
+
+This contract verifies HMAC-based proofs and runs structural validation of
+Bulletproof envelopes on-chain. Full Bulletproofs EC verification stays
+off-chain in `Tessera.Attestations.CredentialProof.Verify`.
 
 ## Prerequisites
 
@@ -169,42 +175,16 @@ export ZKP_SOURCE_ACCOUNT="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 }
 ```
 
-## Step 7: Test with C#
+## Step 7: Exercise the contract from C#
 
-Create a simple test application:
+The `Tessera.Chains.Stellar` C# adapter is currently a scaffold — the dedicated
+anchor-storage contract has not been written yet (see
+[`README.md` § Future work](README.md#future-work)). For ad-hoc on-chain testing
+of the existing `attestation-verifier` contract, invoke it directly with the
+`stellar` CLI or by building Soroban transactions in your own code.
 
-```csharp
-using Tessera.Core;
-using Tessera.Security;
-using Tessera.Integration.Stellar;
-
-var hmacKey = Environment.GetEnvironmentVariable("ZKP_HMAC_KEY");
-var contractId = Environment.GetEnvironmentVariable("ZKP_CONTRACT_ID");
-// ZKP_SOURCE_ACCOUNT must be set for VerifyBalanceProof (or use VerifyBalanceProofWithSourceAccount)
-
-var zkp = new Zkp(new ProofProvider(hmacKey));
-var blockchain = new StellarBlockchain(
-    "https://horizon-testnet.stellar.org",
-    "https://soroban-testnet.stellar.org",
-    hmacKey: hmacKey
-);
-
-// Generate proof
-var balance = 1000.0;
-var requestedAmount = 500.0;
-var (proof, salt) = zkp.ProveBalance(balance, requestedAmount);
-
-// Verify on blockchain
-var isValid = await blockchain.VerifyBalanceProof(
-    contractId,
-    proof,
-    balance,
-    requestedAmount,
-    salt
-);
-
-Console.WriteLine($"Proof verified: {isValid}");
-```
+If you want to use Tessera's higher-level API against Stellar anchoring today,
+prefer the Solana adapter — see [`docs/deploying-solana.md`](../../docs/deploying-solana.md).
 
 ## Troubleshooting
 

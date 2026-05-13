@@ -12,7 +12,7 @@ public class EfCoreIssuerRegistryTests
         Did = new DidId(did),
         PublicKey = RandomNumberGenerator.GetBytes(32),
         Algorithm = "ed25519",
-        SchemaUri = "https://schemas.zkp/attestation/v1",
+        SchemaUri = "https://schemas.tessera/attestation/v1",
         Active = active,
     };
 
@@ -57,7 +57,7 @@ public class EfCoreIssuerRegistryTests
     {
         using var fx = new SqliteFixture();
         var first = SampleIssuer();
-        var second = first with { SchemaUri = "https://schemas.zkp/attestation/v2" };
+        var second = first with { SchemaUri = "https://schemas.tessera/attestation/v2" };
 
         await using (var db = fx.CreateContext())
             await new EfCoreIssuerRegistry(db).RegisterAsync(first);
@@ -70,7 +70,7 @@ public class EfCoreIssuerRegistryTests
             var reg = new EfCoreIssuerRegistry(db);
             var loaded = await reg.ResolveAsync(first.Did);
             Assert.NotNull(loaded);
-            Assert.Equal("https://schemas.zkp/attestation/v2", loaded.SchemaUri);
+            Assert.Equal("https://schemas.tessera/attestation/v2", loaded.SchemaUri);
         }
     }
 

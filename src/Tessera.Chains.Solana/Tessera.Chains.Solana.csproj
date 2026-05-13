@@ -14,6 +14,12 @@
     <PackageReference Include="Solnet.Rpc" Version="6.1.0" />
     <PackageReference Include="Solnet.Wallet" Version="6.1.0" />
     <PackageReference Include="Solnet.Programs" Version="6.1.0" />
+
+    <!--
+      Override vulnerable transitive: Solnet 6.1.0 pulls in System.Text.Json 6.0.0
+      which is affected by GHSA-8g4q-xg66-9fp4. Bump to 8.0.5 (latest 8.x patched).
+    -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
