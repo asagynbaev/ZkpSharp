@@ -14,18 +14,18 @@ namespace Tessera.Sdk;
 /// One instance per DID. Hold attestation state in memory for the lifetime of the instance;
 /// consumers persist the list of <see cref="Attestation"/> objects however they prefer
 /// (database, encrypted file, secure enclave) and pass them back through
-/// <see cref="LoadAsync(DidId, IReadOnlyList{Attestation}, ZkpHolderOptions, CancellationToken)"/>
+/// <see cref="LoadAsync(DidId, IReadOnlyList{Attestation}, HolderOptions, CancellationToken)"/>
 /// at startup.
 /// </para>
 /// </remarks>
-public sealed class ZkpHolder
+public sealed class Holder
 {
     private readonly DidService _didService;
-    private readonly ZkpHolderOptions _options;
+    private readonly HolderOptions _options;
     private readonly List<Attestation> _attestations = new();
     private DidDocument _document;
 
-    private ZkpHolder(DidDocument document, DidService didService, ZkpHolderOptions options)
+    private Holder(DidDocument document, DidService didService, HolderOptions options)
     {
         _document = document;
         _didService = didService;
@@ -49,31 +49,31 @@ public sealed class ZkpHolder
     /// Create a fresh DID from the controller public key and persist it.
     /// The DID identifier is derived deterministically — callers cannot pick it.
     /// </summary>
-    public static async Task<ZkpHolder> CreateAsync(
+    public static async Task<Holder> CreateAsync(
         ReadOnlyMemory<byte> controllerPublicKey,
-        ZkpHolderOptions options,
+        HolderOptions options,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
         var didService = new DidService(options.Store, options.SignatureVerifier, options.Clock);
         var doc = await didService.CreateAsync(controllerPublicKey, ct).ConfigureAwait(false);
-        return new ZkpHolder(doc, didService, options);
+        return new Holder(doc, didService, options);
     }
 
     /// <summary>Load an existing DID from the store with no prior attestations.</summary>
-    public static Task<ZkpHolder> LoadAsync(
+    public static Task<Holder> LoadAsync(
         DidId did,
-        ZkpHolderOptions options,
+        HolderOptions options,
         CancellationToken ct = default)
         => LoadAsync(did, Array.Empty<Attestation>(), options, ct);
 
     /// <summary>
     /// Load an existing DID from the store and seed it with previously accepted attestations.
     /// </summary>
-    public static async Task<ZkpHolder> LoadAsync(
+    public static async Task<Holder> LoadAsync(
         DidId did,
         IReadOnlyList<Attestation> attestations,
-        ZkpHolderOptions options,
+        HolderOptions options,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -83,7 +83,7 @@ public sealed class ZkpHolder
         var doc = await options.Store.GetAsync(did, ct).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"DID not found in store: {did}.");
 
-        var holder = new ZkpHolder(doc, didService, options);
+        var holder = new Holder(doc, didService, options);
         holder._attestations.AddRange(attestations);
         return holder;
     }
@@ -111,7 +111,7 @@ public sealed class ZkpHolder
 
     /// <summary>
     /// Accept an issuer-signed attestation. The holder does NOT verify the issuer signature
-    /// here — that is the verifier's job at presentation time. Use <see cref="ZkpVerifier"/>
+    /// here — that is the verifier's job at presentation time. Use <see cref="Verifier"/>
     /// off-flow if you want to sanity-check before storing.
     /// </summary>
     public void AcceptAttestation(Attestation attestation)

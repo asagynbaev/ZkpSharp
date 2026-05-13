@@ -5,14 +5,14 @@ using Tessera.Signing;
 
 namespace Tessera.Sdk.Tests;
 
-public class ZkpIssuerTests
+public class IssuerTests
 {
     [Fact]
     public void Issue_ProducesAttestationBoundToIssuerAndSubject()
     {
         var (priv, _) = Ed25519.GenerateKeypair();
         using var signer = new Ed25519IssuerSigner(priv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:my-issuer"), signer);
+        var issuer = new Issuer(new DidId("did:tessera:my-issuer"), signer);
 
         var subject = new DidId("did:tessera:subject-1");
         var att = issuer.Issue(
@@ -32,7 +32,7 @@ public class ZkpIssuerTests
     {
         var (priv, pub) = Ed25519.GenerateKeypair();
         using var signer = new Ed25519IssuerSigner(priv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:another-issuer"), signer);
+        var issuer = new Issuer(new DidId("did:tessera:another-issuer"), signer);
 
         var record = issuer.BuildRegistryRecord(schemaUri: "https://example.com/schema/v3");
 
@@ -48,7 +48,7 @@ public class ZkpIssuerTests
     {
         var (priv, _) = Ed25519.GenerateKeypair();
         using var signer = new Ed25519IssuerSigner(priv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:revoked-issuer"), signer);
+        var issuer = new Issuer(new DidId("did:tessera:revoked-issuer"), signer);
 
         var record = issuer.BuildRegistryRecord(schemaUri: "x", active: false);
         Assert.False(record.Active);
@@ -59,7 +59,7 @@ public class ZkpIssuerTests
     {
         var (priv, _) = Ed25519.GenerateKeypair();
         using var signer = new Ed25519IssuerSigner(priv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:issuer"), signer);
+        var issuer = new Issuer(new DidId("did:tessera:issuer"), signer);
 
         var att = issuer.Issue(
             type: "custom",

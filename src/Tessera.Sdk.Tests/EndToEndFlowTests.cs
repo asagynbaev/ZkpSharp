@@ -25,19 +25,19 @@ public class EndToEndFlowTests
         // ── issuer side ─────────────────────────────────────────────────────
         var (issuerPriv, _) = Ed25519.GenerateKeypair();
         using var issuerSigner = new Ed25519IssuerSigner(issuerPriv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:issuer-app"), issuerSigner);
+        var issuer = new Issuer(new DidId("did:tessera:issuer-app"), issuerSigner);
 
         registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.zkp/attestation/v1"));
 
         // ── holder side ─────────────────────────────────────────────────────
         var (_, holderPub) = Ed25519.GenerateKeypair();
-        var holderOpts = new ZkpHolderOptions
+        var holderOpts = new HolderOptions
         {
             Store = new Tessera.Did.InMemoryDidStore(),
             SignatureVerifier = verifier,
             ChainAnchor = chain,
         };
-        var holder = await ZkpHolder.CreateAsync(holderPub, holderOpts);
+        var holder = await Holder.CreateAsync(holderPub, holderOpts);
 
         // issuer issues an attestation FOR the holder
         var att = issuer.Issue("phone_verified", holder.Did, new AttestationPayload { Method = "test_carrier" });
@@ -57,7 +57,7 @@ public class EndToEndFlowTests
             chain: "test",
             holderSignature: RandomBytes(64));
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -91,7 +91,7 @@ public class EndToEndFlowTests
             chain: "test",
             holderSignature: RandomBytes(64));
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -125,7 +125,7 @@ public class EndToEndFlowTests
             chain: "test",
             holderSignature: RandomBytes(64));
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -161,7 +161,7 @@ public class EndToEndFlowTests
         // simulate the on-chain epoch advancing past the presentation's snapshot
         await chain.BumpRevocationAsync(holder.Did, Tessera.Chains.RevocationReason.HolderRequested);
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -194,7 +194,7 @@ public class EndToEndFlowTests
             chain: "test",
             holderSignature: RandomBytes(64));
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -226,7 +226,7 @@ public class EndToEndFlowTests
             holderSignature: RandomBytes(64));
 
         // No chain anchor configured — caller supplies the expected root directly.
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -256,7 +256,7 @@ public class EndToEndFlowTests
             chain: "test",
             holderSignature: RandomBytes(64));
 
-        var zkpVerifier = new ZkpVerifier(new ZkpVerifierOptions
+        var zkpVerifier = new Verifier(new VerifierOptions
         {
             IssuerRegistry = registry,
             SignatureVerifier = verifier,
@@ -273,10 +273,10 @@ public class EndToEndFlowTests
     // ── helpers ──────────────────────────────────────────────────────────
 
     private record FlowFixture(
-        ZkpHolder Holder,
+        Holder Holder,
         byte[] HolderPub,
         InMemoryChainAnchor Chain,
-        ZkpIssuer Issuer,
+        Issuer Issuer,
         InMemoryIssuerRegistry Registry,
         Ed25519Verifier SignatureVerifier);
 
@@ -288,11 +288,11 @@ public class EndToEndFlowTests
 
         var (issuerPriv, _) = Ed25519.GenerateKeypair();
         var issuerSigner = new Ed25519IssuerSigner(issuerPriv);
-        var issuer = new ZkpIssuer(new DidId("did:tessera:flow-issuer"), issuerSigner);
+        var issuer = new Issuer(new DidId("did:tessera:flow-issuer"), issuerSigner);
         registry.Register(issuer.BuildRegistryRecord(schemaUri: "https://schemas.zkp/attestation/v1"));
 
         var (_, holderPub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(holderPub, new ZkpHolderOptions
+        var holder = await Holder.CreateAsync(holderPub, new HolderOptions
         {
             Store = new Tessera.Did.InMemoryDidStore(),
             SignatureVerifier = verifier,

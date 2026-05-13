@@ -4,7 +4,7 @@ using Tessera.Did;
 namespace Tessera.Sdk;
 
 /// <summary>
-/// Composition-root configuration for <see cref="ZkpHolder"/>.
+/// Composition-root configuration for <see cref="Holder"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,17 +13,17 @@ namespace Tessera.Sdk;
 /// presentations but does not anchor roots on-chain.
 /// </para>
 /// <para>
-/// Lifetime: an instance of <see cref="ZkpHolder"/> represents one specific DID. Construct
+/// Lifetime: an instance of <see cref="Holder"/> represents one specific DID. Construct
 /// multiple holders for multi-tenant scenarios.
 /// </para>
 /// </remarks>
-public sealed record ZkpHolderOptions
+public sealed record HolderOptions
 {
     public required IDidStore Store { get; init; }
     public required ISignatureVerifier SignatureVerifier { get; init; }
 
     /// <summary>
-    /// Optional on-chain anchor. When null, <see cref="ZkpHolder.AnchorRootAsync"/> throws.
+    /// Optional on-chain anchor. When null, <see cref="Holder.AnchorRootAsync"/> throws.
     /// Off-chain bundling and presentation building work without a chain anchor.
     /// </summary>
     public IChainAnchor? ChainAnchor { get; init; }

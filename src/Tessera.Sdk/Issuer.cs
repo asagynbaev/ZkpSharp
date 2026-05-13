@@ -14,12 +14,12 @@ namespace Tessera.Sdk;
 /// one-time operational step done out of band (database insert, on-chain registration, etc.).
 /// </para>
 /// </remarks>
-public sealed class ZkpIssuer
+public sealed class Issuer
 {
     private readonly AttestationIssuer _inner;
     private readonly IIssuerSigner _signer;
 
-    public ZkpIssuer(DidId issuerDid, IIssuerSigner signer, TimeProvider? clock = null)
+    public Issuer(DidId issuerDid, IIssuerSigner signer, TimeProvider? clock = null)
     {
         ArgumentNullException.ThrowIfNull(signer);
         _signer = signer;

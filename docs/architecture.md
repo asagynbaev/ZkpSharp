@@ -59,7 +59,7 @@ Tessera/
 │   ├── Tessera.Chains.Solana/              Solana adapter (Solnet, identity-registry program)
 │   ├── Tessera.Chains.Solana.Tests/
 │   ├── Tessera.Chains.Stellar/             Stellar adapter scaffold (StellarDotnetSdk, Soroban)
-│   ├── Tessera.Sdk/                        ZkpHolder, ZkpIssuer, ZkpVerifier facades
+│   ├── Tessera.Sdk/                        Holder, Issuer, Verifier facades
 │   └── Tessera.Sdk.Tests/
 │
 ├── chains/

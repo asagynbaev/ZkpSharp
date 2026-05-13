@@ -11,13 +11,13 @@ namespace Tessera.Sdk;
 ///   <item>Policy layer — verifier-DID match, session nonce match, revocation freshness</item>
 /// </list>
 /// </summary>
-public sealed class ZkpVerifier
+public sealed class Verifier
 {
-    private readonly ZkpVerifierOptions _options;
+    private readonly VerifierOptions _options;
     private readonly AttestationVerifier _attVerifier;
     private readonly PresentationVerifier _presVerifier;
 
-    public ZkpVerifier(ZkpVerifierOptions options)
+    public Verifier(VerifierOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options;
@@ -83,7 +83,7 @@ public sealed class ZkpVerifier
         else
         {
             throw new InvalidOperationException(
-                "No anchor root available: either supply policy.ExpectedAnchorRoot or configure ZkpVerifierOptions.ChainAnchor.");
+                "No anchor root available: either supply policy.ExpectedAnchorRoot or configure VerifierOptions.ChainAnchor.");
         }
 
         // 4. Cryptographic + Merkle verification
@@ -92,7 +92,7 @@ public sealed class ZkpVerifier
 }
 
 /// <summary>
-/// Caller-supplied expectations for <see cref="ZkpVerifier.VerifyPresentationAsync"/>.
+/// Caller-supplied expectations for <see cref="Verifier.VerifyPresentationAsync"/>.
 /// </summary>
 public sealed record VerificationPolicy
 {

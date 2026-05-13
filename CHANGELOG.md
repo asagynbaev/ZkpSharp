@@ -14,7 +14,7 @@
 - **Channel binding** (`Tessera.Channels`): HKDF-SHA256 commitments over phone / email / Telegram handles. Pepper held outside the library (`IPepperProvider`).
 - **Solana adapter** (`Tessera.Chains.Solana`): full implementation against the `identity-registry` Anchor program — Borsh, Anchor discriminators, PDA derivation, instruction builders, account decoders.
 - **Stellar adapter scaffold** (`Tessera.Chains.Stellar`): wired for `IChainAnchor`; awaiting a dedicated anchor contract.
-- **SDK facades** (`Tessera.Sdk`): `ZkpHolder`, `ZkpIssuer`, `ZkpVerifier` — the recommended consumer entry point.
+- **SDK facades** (`Tessera.Sdk`): `Holder`, `Issuer`, `Verifier` — the recommended consumer entry point.
 - **Solana Anchor program** ([`chains/solana/programs/identity-registry/`](chains/solana/programs/identity-registry/)): `register_did`, `update_root`, `bump_revocation`, `register_issuer`. Owner-signed, PDA-backed.
 - **Devnet smoke tests** for the Solana flow (`SkippableFact`, env-var gated). See [`docs/deploying-solana.md`](docs/deploying-solana.md).
 

@@ -32,7 +32,7 @@ secondary).
 
 | Package | Purpose |
 |---|---|
-| `Tessera.Sdk` | **Entry point for most consumers.** High-level `ZkpHolder`, `ZkpIssuer`, `ZkpVerifier` facades. |
+| `Tessera.Sdk` | **Entry point for most consumers.** High-level `Holder`, `Issuer`, `Verifier` facades. |
 | `Tessera.Core` | `DidId`, `Base58`. Zero external dependencies. |
 | `Tessera.Did` | `DidDocument`, `DidService`, `IDidStore`, wallet/channel binding, revocation. |
 | `Tessera.Attestations` | `Attestation`, `AttestationIssuer`, `MerkleTree`, `AttestationVerifier`, `PresentationVerifier`, `IIssuerRegistry`, `CredentialProof`. |
@@ -57,7 +57,7 @@ Tessera/
 │   ├── Tessera.Chains.Abstractions/     IChainAnchor
 │   ├── Tessera.Chains.Solana/           Solana adapter (Solnet)
 │   ├── Tessera.Chains.Stellar/          Stellar adapter scaffold
-│   └── Tessera.Sdk/                     ZkpHolder, ZkpIssuer, ZkpVerifier
+│   └── Tessera.Sdk/                     Holder, Issuer, Verifier
 │
 ├── chains/
 │   ├── solana/programs/identity-registry/   Anchor program (primary)
@@ -97,7 +97,7 @@ using Tessera.Did;
 // One-time keypair for the human/agent who controls this DID.
 var (controllerPriv, controllerPub) = Ed25519.GenerateKeypair();
 
-var holder = await ZkpHolder.CreateAsync(controllerPub, new ZkpHolderOptions
+var holder = await Holder.CreateAsync(controllerPub, new HolderOptions
 {
     Store              = new InMemoryDidStore(),     // or EfCoreDidStore for Postgres
     SignatureVerifier  = new Ed25519Verifier(),
@@ -124,7 +124,7 @@ var presentation = holder.BuildPresentation(
 
 ```csharp
 using var signer = new Ed25519IssuerSigner(issuerPrivateKey);
-var issuer = new ZkpIssuer(new DidId("did:tessera:my-issuer-service"), signer);
+var issuer = new Issuer(new DidId("did:tessera:my-issuer-service"), signer);
 
 var attestation = issuer.Issue(
     type:     AttestationTypes.PhoneVerified,
@@ -140,7 +140,7 @@ await issuerRegistry.RegisterAsync(issuer.BuildRegistryRecord(
 ### Verifier side — check a presentation against a policy
 
 ```csharp
-var zkp = new ZkpVerifier(new ZkpVerifierOptions
+var zkp = new Verifier(new VerifierOptions
 {
     IssuerRegistry     = issuerRegistry,
     SignatureVerifier  = new Ed25519Verifier(),

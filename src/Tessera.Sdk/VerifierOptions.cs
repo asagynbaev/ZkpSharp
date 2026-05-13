@@ -4,9 +4,9 @@ using Tessera.Chains;
 namespace Tessera.Sdk;
 
 /// <summary>
-/// Composition-root configuration for <see cref="ZkpVerifier"/>.
+/// Composition-root configuration for <see cref="Verifier"/>.
 /// </summary>
-public sealed record ZkpVerifierOptions
+public sealed record VerifierOptions
 {
     public required IIssuerRegistry IssuerRegistry { get; init; }
     public required ISignatureVerifier SignatureVerifier { get; init; }

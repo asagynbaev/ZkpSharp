@@ -7,11 +7,11 @@ using Tessera.Signing;
 
 namespace Tessera.Sdk.Tests;
 
-public class ZkpHolderTests
+public class HolderTests
 {
-    private static ZkpHolderOptions BuildOptions(IChainAnchorOrNull chain = IChainAnchorOrNull.None)
+    private static HolderOptions BuildOptions(IChainAnchorOrNull chain = IChainAnchorOrNull.None)
     {
-        return new ZkpHolderOptions
+        return new HolderOptions
         {
             Store = new InMemoryDidStore(),
             SignatureVerifier = new Ed25519Verifier(),
@@ -27,7 +27,7 @@ public class ZkpHolderTests
         var (_, pub) = Ed25519.GenerateKeypair();
         var options = BuildOptions();
 
-        var holder = await ZkpHolder.CreateAsync(pub, options);
+        var holder = await Holder.CreateAsync(pub, options);
 
         Assert.True(holder.Did.IsWellFormed);
         Assert.Equal(holder.Did, holder.Document.Id);
@@ -41,11 +41,11 @@ public class ZkpHolderTests
         var (_, pub) = Ed25519.GenerateKeypair();
         var options = BuildOptions();
 
-        var created = await ZkpHolder.CreateAsync(pub, options);
+        var created = await Holder.CreateAsync(pub, options);
         var didId = created.Did;
 
         var att = BuildSignedAttestationFor(didId);
-        var reloaded = await ZkpHolder.LoadAsync(didId, new[] { att }, options);
+        var reloaded = await Holder.LoadAsync(didId, new[] { att }, options);
 
         Assert.Equal(didId, reloaded.Did);
         Assert.Single(reloaded.Attestations);
@@ -56,14 +56,14 @@ public class ZkpHolderTests
     {
         var options = BuildOptions();
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => ZkpHolder.LoadAsync(new DidId("did:tessera:not-real"), options));
+            () => Holder.LoadAsync(new DidId("did:tessera:not-real"), options));
     }
 
     [Fact]
     public async Task AcceptAttestation_WrongSubject_Throws()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         var wrong = BuildSignedAttestationFor(new DidId("did:tessera:somebody-else"));
 
         Assert.Throws<ArgumentException>(() => holder.AcceptAttestation(wrong));
@@ -73,7 +73,7 @@ public class ZkpHolderTests
     public async Task CurrentRoot_IsNullUntilAttestationsExist()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         Assert.Null(holder.CurrentRoot);
 
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did));
@@ -85,7 +85,7 @@ public class ZkpHolderTests
     public async Task AnchorRootAsync_NoChain_Throws()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions(IChainAnchorOrNull.None));
+        var holder = await Holder.CreateAsync(pub, BuildOptions(IChainAnchorOrNull.None));
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => holder.AnchorRootAsync());
@@ -95,7 +95,7 @@ public class ZkpHolderTests
     public async Task AnchorRootAsync_NoAttestations_Throws()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions(IChainAnchorOrNull.InMemory));
+        var holder = await Holder.CreateAsync(pub, BuildOptions(IChainAnchorOrNull.InMemory));
         await Assert.ThrowsAsync<InvalidOperationException>(() => holder.AnchorRootAsync());
     }
 
@@ -104,7 +104,7 @@ public class ZkpHolderTests
     {
         var (_, pub) = Ed25519.GenerateKeypair();
         var options = BuildOptions(IChainAnchorOrNull.InMemory);
-        var holder = await ZkpHolder.CreateAsync(pub, options);
+        var holder = await Holder.CreateAsync(pub, options);
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did));
 
         var result = await holder.AnchorRootAsync();
@@ -120,7 +120,7 @@ public class ZkpHolderTests
     public async Task BuildPresentation_ByIndices_ProducesValidDisclosures()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "phone_verified"));
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "human_verified"));
 
@@ -141,7 +141,7 @@ public class ZkpHolderTests
     public async Task BuildPresentation_ByType_PicksMatchingAttestations()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "phone_verified"));
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "human_verified"));
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "phone_verified"));
@@ -162,7 +162,7 @@ public class ZkpHolderTests
     public async Task BuildPresentation_NoMatchingType_Throws()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "phone_verified"));
 
         Assert.Throws<InvalidOperationException>(() => holder.BuildPresentation(
@@ -178,7 +178,7 @@ public class ZkpHolderTests
     public async Task BuildPresentation_OutOfRangeIndex_Throws()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => holder.BuildPresentation(
@@ -194,7 +194,7 @@ public class ZkpHolderTests
     public async Task RemoveAttestation_ShiftsList()
     {
         var (_, pub) = Ed25519.GenerateKeypair();
-        var holder = await ZkpHolder.CreateAsync(pub, BuildOptions());
+        var holder = await Holder.CreateAsync(pub, BuildOptions());
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "phone_verified"));
         holder.AcceptAttestation(BuildSignedAttestationFor(holder.Did, type: "human_verified"));
 
