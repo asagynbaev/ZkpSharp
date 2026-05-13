@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <Description>Tests for Tessera.Chains.Solana: Anchor discriminators, Borsh, PDA derivation, instruction layout, account decoders, devnet smoke tests.</Description>
   </PropertyGroup>
 
   <ItemGroup>

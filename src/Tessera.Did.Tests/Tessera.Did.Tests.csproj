@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <Description>Tests for Tessera.Did: DID creation, wallet binding, revocation, signature verification.</Description>
   </PropertyGroup>
 
   <ItemGroup>

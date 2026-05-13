@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <Description>Tests for Tessera.Channels: HKDF commitment determinism, cross-channel collision resistance, normaliser behavior.</Description>
   </PropertyGroup>
 
   <ItemGroup>

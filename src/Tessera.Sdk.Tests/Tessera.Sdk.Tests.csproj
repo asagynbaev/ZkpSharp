@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <Description>Tests for Tessera.Sdk: Holder/Issuer/Verifier facades and end-to-end attestation flow.</Description>
   </PropertyGroup>
 
   <ItemGroup>

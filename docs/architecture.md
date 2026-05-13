@@ -189,7 +189,35 @@ All planned moves from the v2 monolith have been completed:
 Net adds beyond the original plan:
 - `Tessera.Signing` — production Ed25519 (no more BYO-crypto delegate)
 - `Tessera.EntityFrameworkCore` — Postgres / SQL Server / SQLite stores
+- `Tessera.Channels` — HKDF channel commitments
 - `Tessera.Sdk` — high-level Holder/Issuer/Verifier facades
 - New: `src/Tessera.Chains.Solana/` — C# adapter against the Anchor program.
+
+## Dual codebase: legacy `Tessera/` monolith
+
+The legacy `Tessera/` directory (and its `Tessera.Tests/` test project) **still
+contain working v2-era code**: HMAC `ProofProvider`, `BulletproofsProvider`
+wrapper, and a duplicate copy of the Bulletproofs/secp256k1 implementation
+under `Tessera/Crypto/*`. They are kept for these reasons:
+
+1. **NuGet backward compatibility.** Anyone who depended on `ZkpSharp` 2.x
+   and upgrades to `Tessera` 3.0.0 keeps their existing call sites working.
+   The monolith exposes the v2 API surface under the new namespace.
+2. **Independent test signal.** `Tessera.Tests/Crypto/*Tests.cs` still
+   exercises the legacy crypto implementation. `src/Tessera.Cryptography.Tests/`
+   tests the split-package copy independently — divergence between the two
+   would be a regression we want to catch.
+
+**Sunset plan.** Once `Tessera` 3.x is published and consumers have migrated
+to the split packages, the legacy monolith can be deleted in a single commit:
+remove `Tessera/`, `Tessera.Tests/`, and drop them from `TesseraSolution.sln`.
+Nothing under `src/Tessera.*/` depends on it.
+
+**Do not deduplicate naïvely.** It is tempting to delete
+`Tessera/Crypto/Bulletproofs/` because the same code lives in
+`src/Tessera.Cryptography/Bulletproofs/`. Don't — they serve different
+consumers (v2 API surface vs v3 split packages), and they may legitimately
+diverge if v3 grows new generators or domain separators that v2 must keep
+producing the old way.
 
 The v3 cut is a breaking release. Until then, both layouts coexist and tests cover both.
