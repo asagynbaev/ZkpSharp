@@ -1,305 +1,54 @@
-# ZKP Verifier Soroban Smart Contracts
+# Stellar (secondary chain)
 
-This directory contains production-ready Soroban smart contracts for verifying Zero-Knowledge Proofs (ZKP) on the Stellar blockchain.
+Soroban contract that ZkpSharp uses as its **secondary** anchor target. Solana is primary
+(see [`../solana/`](../solana/)); Stellar exists because the original v2 codebase shipped
+a working Soroban integration and there is no reason to throw away working code.
 
-## Quick Start
+## Status
 
-### Build the Contracts
+| Component | State |
+|---|---|
+| `contracts/attestation-verifier/` | Working contract from v2.x. Verifies HMAC and Bulletproof-structure on-chain. Kept for backward compatibility with v2.x consumers. |
+| C# adapter `ZkpSharp.Chains.Stellar` | Scaffolded against `IChainAnchor` but the dedicated anchor contract for storing roots/epochs has not been written yet. The C# side is wired; the Rust contract for anchor-state needs to be added. |
+
+If you need on-chain anchoring of DID roots **today**, use the Solana adapter.
+Stellar will reach parity when the anchor contract lands.
+
+## What the existing `attestation-verifier` contract does
+
+The contract in [`contracts/attestation-verifier/`](contracts/attestation-verifier/) is
+the v2-era proof verifier (renamed from `proof-balance` to match the new architecture).
+It performs:
+
+- **HMAC-SHA256 verification** — full on-chain recomputation + constant-time compare.
+- **Bulletproof structural validation** — checks compressed-point prefixes and IPA length;
+  emits a transcript-binding hash for off-chain auditing. Soroban does not natively
+  support secp256k1 EC math, so full Bulletproof verification **must** run off-chain via
+  `ZkpSharp.Attestations.CredentialProof.Verify`.
+
+It is **not** the DID anchor contract — that is a separate contract that will live next
+to it once written.
+
+## Build and deploy
 
 ```bash
 cargo build --target wasm32-unknown-unknown --release
-```
-
-### Run Tests
-
-```bash
-cargo test
-```
-
-### Deploy to Testnet
-
-See the [Deployment Guide](DEPLOYMENT.md) for detailed instructions.
-
-```bash
 soroban contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/attestation_verifier.wasm \
-  --source alice \
-  --network testnet
+    --wasm target/wasm32-unknown-unknown/release/attestation_verifier.wasm \
+    --source alice \
+    --network testnet
 ```
 
-## Project Structure
-
-```text
-.
-├── contracts
-│   └── attestation-verifier/        # ZKP verifier contract
-│       ├── src/
-│       │   ├── lib.rs       # Main contract implementation
-│       │   │                # - verify_proof: HMAC proof verification
-│       │   │                # - verify_balance_proof: Balance proof with numeric check
-│       │   │                # - verify_batch: Batch verification
-│       │   │                # - verify_zk_range_proof: Bulletproofs structural validation
-│       │   │                # - verify_zk_age_proof: ZK age proof structural validation
-│       │   │                # - verify_zk_balance_proof: ZK balance proof structural validation
-│       │   └── test.rs      # Comprehensive test suite
-│       └── Cargo.toml
-├── Cargo.toml               # Workspace configuration
-├── README.md                # This file
-└── DEPLOYMENT.md            # Deployment guide
-```
-
-## Contracts
-
-### ZKP Verifier Contract (attestation-verifier)
-
-Status: Production Ready
-
-A production-ready smart contract for verifying zero-knowledge proofs on Stellar.
-
-#### Features
-
-- **HMAC-SHA256 verification**: RFC 2104 compliant, constant-time comparison
-- **Bulletproofs structural verification**: Validates secp256k1 compressed points, IPA length, and Fiat-Shamir transcript binding for range, age, and balance proofs
-- **Batch verification**: Multiple proofs in a single invocation
-- **Numeric balance comparison**: Proper decimal parsing, not byte-length comparison
-
-#### Function Signatures
-
-```rust
-// HMAC-SHA256 proof verification
-pub fn verify_proof(
-    env: Env,
-    proof: BytesN<32>,
-    data: Bytes,
-    salt: Bytes,
-    hmac_key: BytesN<32>,
-) -> bool
-
-// Balance proof with numeric comparison
-pub fn verify_balance_proof(
-    env: Env,
-    proof: BytesN<32>,
-    balance_data: Bytes,
-    required_amount_data: Bytes,
-    salt: Bytes,
-    hmac_key: BytesN<32>,
-) -> bool
-
-// Batch verification
-pub fn verify_batch(
-    env: Env,
-    proofs: Vec<BytesN<32>>,
-    data_items: Vec<Bytes>,
-    salts: Vec<Bytes>,
-    hmac_key: BytesN<32>,
-) -> bool
-
-// Bulletproofs structural validation (NOT full EC verification)
-pub fn verify_zk_range_proof(
-    env: Env,
-    proof: Bytes,
-    commitment: BytesN<33>,
-    min: i64,
-    max: i64,
-) -> bool
-
-// ZK age proof verification
-pub fn verify_zk_age_proof(
-    env: Env,
-    proof: Bytes,
-    commitment: BytesN<33>,
-    min_age: u32,
-) -> bool
-
-// ZK balance proof verification
-pub fn verify_zk_balance_proof(
-    env: Env,
-    proof: Bytes,
-    commitment: BytesN<33>,
-    required_amount: i64,
-) -> bool
-```
-
-#### Security Features
-
-1. **HMAC-SHA256**: RFC 2104 compliant implementation
-2. **Constant-time comparison**: Prevents timing attacks
-3. **Input validation**: Validates all inputs before processing
-4. **Event logging**: Comprehensive event emission for debugging
-5. **Error handling**: Proper error codes for different failure scenarios
-
-#### Gas Optimization
-
-The contract is optimized for gas efficiency:
-- Minimal storage usage
-- Efficient cryptographic operations
-- Batch processing support
-- Optimized XDR encoding/decoding
-
-## Testing
-
-### Unit Tests
-
-Run the contract unit tests:
-
-```bash
-cargo test
-```
-
-### Integration Tests
-
-The contract includes comprehensive integration tests:
-
-```bash
-cargo test --package attestation-verifier
-```
-
-Test coverage includes:
-- Valid proof verification
-- Invalid proof rejection
-- Salt length validation
-- Balance proof verification
-- Batch verification (all valid)
-- Batch verification (with invalid)
-- Constant-time comparison
-- HMAC computation
-- Edge cases and error handling
-
-## Contract Metrics
-
-### attestation-verifier Contract
-
-- **WASM Size**: ~15-20 KB (optimized)
-- **Functions**: 6 public, 4 internal helpers
-- **Test Coverage**: 95%+
-- **Gas Cost** (estimated):
-  - Single verification: ~1,000-2,000 operations
-  - Batch verification: ~800-1,500 operations per proof
-  - Balance verification: ~1,500-2,500 operations
-
-## Development
-
-### Prerequisites
-
-- Rust 1.75+ with `wasm32-unknown-unknown` target
-- Stellar CLI (`cargo install --locked stellar-cli --features opt`; see [DEPLOYMENT.md](DEPLOYMENT.md))
-- Stellar account for deployment
-
-### Building
-
-```bash
-# Build all contracts
-cargo build --target wasm32-unknown-unknown --release
-
-# Build specific contract
-cargo build --target wasm32-unknown-unknown --release --package attestation-verifier
-
-# Optimize WASM
-soroban contract optimize \
-  --wasm target/wasm32-unknown-unknown/release/attestation_verifier.wasm
-```
-
-### Testing
-
-```bash
-# Run all tests
-cargo test
-
-# Run tests with output
-cargo test -- --nocapture
-
-# Run specific test
-cargo test test_verify_valid_proof
-```
-
-### Linting
-
-```bash
-# Check code quality
-cargo clippy -- -D warnings
-
-# Format code
-cargo fmt
-```
-
-## Documentation
-
-- **[Deployment Guide](DEPLOYMENT.md)**: Step-by-step deployment instructions
-- **[Main README](../../README.md)**: ZkpSharp library documentation
-- **[Smart contracts @ Stellar Docs](https://developers.stellar.org/docs/smart-contracts)**: Official Soroban / smart contract documentation
-
-## Troubleshooting
-
-### Build Issues
-
-**Problem**: Cannot build for wasm32 target
-
-**Solution**: 
-```bash
-rustup target add wasm32-unknown-unknown
-```
-
-**Problem**: Compilation errors in soroban-sdk
-
-**Solution**: Ensure you're using the latest soroban-sdk:
-```bash
-cargo update
-```
-
-### Test Issues
-
-**Problem**: Tests fail with "account not found"
-
-**Solution**: This is expected - tests use mock environments and don't require real accounts.
-
-## Deployment
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
-
-Quick deployment to testnet:
-
-```bash
-# 1. Build
-cargo build --target wasm32-unknown-unknown --release --package attestation-verifier
-
-# 2. Deploy
-soroban contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/attestation_verifier.wasm \
-  --source alice \
-  --network testnet
-
-# 3. Save the contract ID
-export ZKP_CONTRACT_ID="C..."
-```
-
-## License
-
-MIT License - See [LICENSE](../../LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-## Support
-
-- Issues: Open an issue in this repository
-- Email: sagynbaev6@gmail.com
-- Discord: Stellar Discord (https://discord.gg/stellar)
-
-## Roadmap
-
-- [x] HMAC-SHA256 proof verification
-- [x] Batch verification
-- [x] Bulletproofs structural verification with Fiat-Shamir transcript binding (secp256k1)
-- [x] Numeric balance comparison
-- [x] Comprehensive tests
-- [x] Production deployment guide
-- [ ] Gas optimization analysis
-- [ ] Multi-key verification support
-- [ ] Upgradeable contract pattern
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full setup (Rust + Stellar CLI + network config).
+
+## Future work
+
+To reach parity with Solana:
+
+1. Write `contracts/attestation-anchor/` with these instructions:
+   - `register_did(did_hash, attestation_root)` → init `did_anchor` record
+   - `update_root(did_hash, new_root)` → mutate root on owner-signed tx
+   - `bump_revocation(did_hash, reason)` → increment epoch
+   - `register_issuer(issuer_did_hash, schema_uri)` → register issuer
+2. Mirror the Solana data layout (32-byte `did_hash`, 32-byte `attestation_root`, `u64` epoch, owner pubkey).
+3. Fill in the `NotImplementedException` paths in [`../../src/ZkpSharp.Chains.Stellar/StellarChainAnchor.cs`](../../src/ZkpSharp.Chains.Stellar/StellarChainAnchor.cs) to invoke the new contract via Soroban RPC.

@@ -1,5 +1,35 @@
 # Changelog
 
+## [3.0.0] - 2026-05-13
+
+**Breaking release.** ZkpSharp is now positioned as privacy-preserving identity and reputation infrastructure for .NET — DIDs, attestations, selective disclosure, multi-chain anchoring — rather than a generic ZKP toolkit. The v2.x monolith is replaced by a set of focused packages.
+
+### Added
+
+- **DID layer** (`ZkpSharp.Did`): `DidDocument`, `DidService`, `IDidStore`, wallet binding, channel binding, revocation. DIDs are deterministic: `did:zkp:<base58(sha256(pubkey||"v1"))>`.
+- **Attestation layer** (`ZkpSharp.Attestations`): `AttestationIssuer`, `MerkleTree` (domain-separated SHA-256), `AttestationVerifier`, `PresentationVerifier`, `IIssuerRegistry`. Selective disclosure via Merkle inclusion proofs.
+- **Cryptography** (`ZkpSharp.Cryptography`): moved from `ZkpSharp.Crypto.*`. Pure-C# secp256k1, Pedersen commitments, Bulletproofs. No external deps.
+- **Signing** (`ZkpSharp.Signing`): real Ed25519 via NSec (libsodium). Drop-in `Ed25519Verifier` and `Ed25519IssuerSigner` — no more BYO crypto delegate.
+- **Storage** (`ZkpSharp.EntityFrameworkCore`): EF Core 8 stores against any relational provider (Postgres, SQL Server, SQLite). Normalized schema with proper indexes.
+- **Channel binding** (`ZkpSharp.Channels`): HKDF-SHA256 commitments over phone / email / Telegram handles. Pepper held outside the library (`IPepperProvider`).
+- **Solana adapter** (`ZkpSharp.Chains.Solana`): full implementation against the `identity-registry` Anchor program — Borsh, Anchor discriminators, PDA derivation, instruction builders, account decoders.
+- **Stellar adapter scaffold** (`ZkpSharp.Chains.Stellar`): wired for `IChainAnchor`; awaiting a dedicated anchor contract.
+- **SDK facades** (`ZkpSharp.Sdk`): `ZkpHolder`, `ZkpIssuer`, `ZkpVerifier` — the recommended consumer entry point.
+- **Solana Anchor program** ([`chains/solana/programs/identity-registry/`](chains/solana/programs/identity-registry/)): `register_did`, `update_root`, `bump_revocation`, `register_issuer`. Owner-signed, PDA-backed.
+- **Devnet smoke tests** for the Solana flow (`SkippableFact`, env-var gated). See [`docs/deploying-solana.md`](docs/deploying-solana.md).
+
+### Removed
+
+- `ZkpSharp.Core.Zkp` — HMAC equality class mislabelled as ZKP. Use `ZkpSharp.Attestations.CredentialProof` for real selective disclosure.
+- `ZkpSharp.Interfaces.IBlockchain` — conflated proof verification with chain anchoring. Use `ZkpSharp.Chains.IChainAnchor`.
+- `ZkpSharp.Integration.Stellar.*` — replaced by `ZkpSharp.Chains.Stellar`.
+- `QUICKSTART.md`, `INTEGRATION_STATUS.md`, `STELLAR_REALITY_CHECK.md` — superseded by the rewritten `README.md` and `docs/architecture.md`.
+
+### Changed
+
+- `contracts/stellar/` moved to `chains/stellar/`; `proof-balance` contract renamed to `attestation-verifier`.
+- v2.x monolith (`ZkpSharp/`) retained as a meta-package referencing the new sub-packages — existing v2 consumers continue to build.
+
 ## [2.2.0] - 2026-03-29
 
 ### Fixed
